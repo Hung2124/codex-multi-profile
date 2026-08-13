@@ -65,6 +65,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$root\Launch-CodexProfile.p
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\Launch-CodexMain.ps1"
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action new -Name codex2
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action list
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action status
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action verify
 ```
 
 ```powershell
@@ -104,6 +106,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Uninstall-CodexMul
 
 - [Architecture](docs/architecture.md)
 - [Troubleshooting](docs/troubleshooting.md)
+- [FAQ](docs/faq.md)
 - [Changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security](SECURITY.md)
