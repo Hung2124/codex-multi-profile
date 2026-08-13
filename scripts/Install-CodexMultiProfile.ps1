@@ -15,18 +15,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-
-function ConvertTo-ProfileKey([string]$ProfileName) {
-    $key = $ProfileName.Trim().ToLowerInvariant()
-    $key = [regex]::Replace($key, '[^a-z0-9]+', '-')
-    $key = $key.Trim('-')
-    if (-not $key) { throw "Invalid profile name: $ProfileName" }
-    return $key
+$modulePath = Join-Path $PSScriptRoot 'CodexMultiProfile.psm1'
+if (-not (Test-Path -LiteralPath $modulePath)) {
+    throw "Missing $modulePath"
 }
-
-function Write-Utf8NoBom([string]$Path, [string]$Text) {
-    [System.IO.File]::WriteAllText($Path, $Text, [System.Text.UTF8Encoding]::new($false))
-}
+Import-Module $modulePath -Force
 
 function New-Lnk {
     param(
@@ -50,7 +43,7 @@ function New-Lnk {
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $ParallelRoot = Join-Path $env:LOCALAPPDATA 'CodexParallelDesktop'
-$key = ConvertTo-ProfileKey $Name
+$key = ConvertTo-ProfileKey -ProfileName $Name
 $desktop = [Environment]::GetFolderPath('Desktop')
 
 New-Item -ItemType Directory -Force -Path $ParallelRoot, (Join-Path $ParallelRoot "profiles\$key") | Out-Null
@@ -103,15 +96,15 @@ function New-VbsLauncher([string]$CmdLine, [int]$WindowStyle) {
 
 $vbsProfile = Join-Path $ParallelRoot ("launch-{0}.vbs" -f $key)
 $cmdProfile = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{0}"" -Name {1}' -f $launchProfile, $key
-Write-Utf8NoBom $vbsProfile (New-VbsLauncher -CmdLine $cmdProfile -WindowStyle 0)
+Write-Utf8NoBom -Path $vbsProfile -Text (New-VbsLauncher -CmdLine $cmdProfile -WindowStyle 0)
 
 $vbsMain = Join-Path $ParallelRoot 'launch-codex-main.vbs'
 $cmdMain = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{0}""' -f $launchMain
-Write-Utf8NoBom $vbsMain (New-VbsLauncher -CmdLine $cmdMain -WindowStyle 0)
+Write-Utf8NoBom -Path $vbsMain -Text (New-VbsLauncher -CmdLine $cmdMain -WindowStyle 0)
 
 $vbsMenu = Join-Path $ParallelRoot 'CodexProfiles-Menu.vbs'
 $cmdMenu = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File ""{0}""' -f $menu
-Write-Utf8NoBom $vbsMenu (New-VbsLauncher -CmdLine $cmdMenu -WindowStyle 1)
+Write-Utf8NoBom -Path $vbsMenu -Text (New-VbsLauncher -CmdLine $cmdMenu -WindowStyle 1)
 
 if (-not $SkipShortcuts) {
     $icon = Get-ChildItem (Join-Path $ParallelRoot 'versions') -Recurse -Filter 'icon-chatgpt.ico' -ErrorAction SilentlyContinue |
