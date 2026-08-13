@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented here.
 
+## 0.1.2 — 2026-08-13
+
+### Added
+- `status -AsJson` for scripts (emails still masked)
+- `remove -Force` to delete one profile folder, never `~\.codex`
+
+### Fixed
+- `launch-trace.log` no longer writes full ChatGPT emails
+- CI uses `actions/checkout@v7`
+
+### Changed
+- Installer imports `CodexMultiProfile.psm1` instead of duplicating helpers
+
 ## 0.1.1 — 2026-08-13
 
 ### Added

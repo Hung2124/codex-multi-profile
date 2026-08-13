@@ -26,6 +26,22 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Update-CodexMultiP
 
 That pulls `main` (fast-forward only) and re-runs the installer, then `verify`.
 
+## How do I delete a secondary profile?
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action remove -Name codex2 -Force
+```
+
+`-Force` is required. `~\.codex` is never deleted.
+
+## How do I get machine-readable status?
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action status -AsJson
+```
+
+Emails in that JSON are already masked.
+
 ## How do I check the install?
 
 ```powershell
