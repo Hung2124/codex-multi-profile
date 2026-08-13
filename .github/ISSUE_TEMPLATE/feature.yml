@@ -1,0 +1,24 @@
+name: Feature request
+description: A verified Windows Codex Desktop behavior this repo should encode
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What went wrong or is missing
+      description: Prefer a launch log excerpt with emails redacted.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: checkboxes
+    id: verified
+    attributes:
+      label: Verified on a real machine
+      options:
+        - label: I reproduced this on Windows Codex Desktop (not only CLI)
+          required: true
