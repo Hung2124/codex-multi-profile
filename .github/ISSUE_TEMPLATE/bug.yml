@@ -1,0 +1,28 @@
+name: Bug report
+description: Something broke while launching or swapping Codex accounts
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Wrong account on screen, crash, Access Denied, poisoned auth, etc.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: Codex Desktop version
+      placeholder: e.g. Store listing version or folder name under %LOCALAPPDATA%\CodexParallelDesktop\versions
+  - type: textarea
+    id: log
+    attributes:
+      label: launch-trace.log excerpt
+      description: Redact emails. File is at %LOCALAPPDATA%\CodexParallelDesktop\launch-trace.log
+      render: text

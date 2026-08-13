@@ -1,0 +1,11 @@
+auth.json
+auth.json.*
+*.bak
+.authswap-active
+launch-trace.log
+launch-*-env.cmd
+.env
+.DS_Store
+Thumbs.db
+profiles/
+versions/

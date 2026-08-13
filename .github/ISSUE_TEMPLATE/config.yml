@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: OpenAI Codex
+    url: https://github.com/openai/codex
+    about: Official Codex CLI / app issues (this repo is unofficial Windows multi-profile only)
