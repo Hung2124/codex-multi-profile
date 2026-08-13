@@ -4,6 +4,15 @@ Set-StrictMode -Version Latest
 $script:ModuleVersion = '0.1.0'
 
 function Get-CodexMultiProfileVersion {
+    $candidates = @(
+        (Join-Path $PSScriptRoot 'VERSION'),
+        (Join-Path (Split-Path -Parent $PSScriptRoot) 'VERSION')
+    )
+    foreach ($path in $candidates) {
+        if (Test-Path -LiteralPath $path) {
+            return ((Get-Content -LiteralPath $path -Raw).Trim())
+        }
+    }
     return $script:ModuleVersion
 }
 

@@ -86,5 +86,9 @@ if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $by
 if ((Get-CodexMultiProfileVersion) -notmatch '^\d+\.\d+\.\d+$') {
     throw 'version should be semver'
 }
+$versionFile = Join-Path (Split-Path -Parent $PSScriptRoot) 'VERSION'
+if ((Get-CodexMultiProfileVersion) -ne (Get-Content -LiteralPath $versionFile -Raw).Trim()) {
+    throw 'Get-CodexMultiProfileVersion should match the VERSION file'
+}
 
 Write-Output 'OK: AuthSwap guards, JWT email parse, profile key, UTF-8 no BOM.'

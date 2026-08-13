@@ -70,6 +70,11 @@ foreach ($name in $files) {
     Unblock-File -LiteralPath (Join-Path $ParallelRoot $name) -ErrorAction SilentlyContinue
 }
 
+$versionSrc = Join-Path $RepoRoot 'VERSION'
+if (Test-Path -LiteralPath $versionSrc) {
+    Copy-Item -LiteralPath $versionSrc -Destination (Join-Path $ParallelRoot 'VERSION') -Force
+}
+
 if (-not $SkipClone) {
     $manager = Join-Path $ParallelRoot 'CodexProfile.ps1'
     try {
@@ -141,6 +146,10 @@ if (-not $SkipSkill) {
 }
 
 Write-Output "Installed to $ParallelRoot"
+if (Test-Path -LiteralPath (Join-Path $ParallelRoot 'VERSION')) {
+    Write-Output ("Version: " + (Get-Content -LiteralPath (Join-Path $ParallelRoot 'VERSION') -Raw).Trim())
+}
 Write-Output "Profile: $key"
 Write-Output "Open '$key' for the secondary account, or 'Codex Main' for the Store app."
 Write-Output "Do not run both at the same time."
+Write-Output "Check with: CodexProfile.ps1 -Action verify"
