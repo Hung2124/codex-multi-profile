@@ -159,12 +159,30 @@ start "" /D "$CloneApp" "$CloneExe" --user-data-dir="$UserDataDir"
     Write-Utf8NoBom -Path $CmdPath -Text $cmd
 }
 
+function Hide-AuthEmail {
+    <#
+    .SYNOPSIS
+      Mask an email for status output. Never print the local-part in full.
+    #>
+    param([Parameter(Mandatory)] [allowemptystring()] [string]$Email)
+    if ([string]::IsNullOrWhiteSpace($Email)) { return 'MISSING' }
+    if ($Email -in @('MISSING', 'PARSE_ERR')) { return $Email }
+    $at = $Email.IndexOf('@')
+    if ($at -lt 1) { return '***' }
+    $user = $Email.Substring(0, $at)
+    $domain = $Email.Substring($at + 1)
+    $keep = [Math]::Min(2, $user.Length)
+    $shown = $user.Substring(0, $keep) + '***'
+    return "$shown@$domain"
+}
+
 Export-ModuleMember -Function @(
     'Get-CodexMultiProfileVersion',
     'Get-CodexParallelRoot',
     'ConvertTo-ProfileKey',
     'Write-Utf8NoBom',
     'Get-AuthEmailFromFile',
+    'Hide-AuthEmail',
     'Test-NeedBootstrapLogin',
     'Test-ShouldSaveProfileAuth',
     'Get-CodexCloneExe',
