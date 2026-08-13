@@ -7,12 +7,14 @@
   .\CodexProfile.ps1 -Action new -Name codex2
   .\CodexProfile.ps1 -Action launch -Name codex1
   .\CodexProfile.ps1 -Action list
+  .\CodexProfile.ps1 -Action status
+  .\CodexProfile.ps1 -Action verify
   .\CodexProfile.ps1 -Action stop -Name codex1
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut')]
+    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut', 'status', 'verify')]
     [string]$Action,
 
     [string]$Name = 'codex1',
@@ -37,6 +39,48 @@ function Get-ProfileRecord([string]$ProfileName) {
         DisplayName = (Get-Culture).TextInfo.ToTitleCase($key)
         Root        = $root
         Auth        = Join-Path $root 'auth.json'
+    }
+}
+
+function Get-RequiredLauncherFiles {
+    @(
+        'CodexMultiProfile.psm1',
+        'Launch-CodexProfile.ps1',
+        'Launch-CodexMain.ps1',
+        'watch-authswap-restore.ps1',
+        'CodexProfile.ps1'
+    )
+}
+
+function Write-InstallStatus {
+    $lock = Join-Path $ParallelRoot '.authswap-active'
+    $swap = if (Test-Path -LiteralPath $lock) { (Get-Content -LiteralPath $lock -Raw).Trim() } else { '' }
+    $clone = $null
+    try { $clone = Get-CodexCloneExe -ParallelRoot $ParallelRoot } catch { $clone = $null }
+    $mainAuth = Join-Path $SourceHome 'auth.json'
+    $mainBak = Join-Path $SourceHome 'auth.json.__main__'
+    $profilesRoot = Join-Path $ParallelRoot 'profiles'
+    $profiles = @()
+    if (Test-Path -LiteralPath $profilesRoot) {
+        $profiles = @(Get-ChildItem $profilesRoot -Directory | ForEach-Object {
+                $email = Get-AuthEmailFromFile -Path (Join-Path $_.FullName 'auth.json')
+                [pscustomobject]@{
+                    Name    = $_.Name
+                    HasAuth = Test-Path -LiteralPath (Join-Path $_.FullName 'auth.json')
+                    Account = Hide-AuthEmail -Email $email
+                }
+            })
+    }
+
+    [pscustomobject]@{
+        Version      = Get-CodexMultiProfileVersion
+        Root         = $ParallelRoot
+        SharedHome   = $SourceHome
+        SwapActive   = $swap
+        CloneExe     = $clone
+        MainAccount  = Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $mainAuth)
+        MainBackup   = Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $mainBak)
+        Profiles     = $profiles
     }
 }
 
@@ -96,9 +140,11 @@ try {
                 break
             }
             $items = @(Get-ChildItem $root -Directory | ForEach-Object {
+                    $email = Get-AuthEmailFromFile -Path (Join-Path $_.FullName 'auth.json')
                     [pscustomobject]@{
                         Name    = $_.Name
                         HasAuth = Test-Path -LiteralPath (Join-Path $_.FullName 'auth.json')
+                        Account = Hide-AuthEmail -Email $email
                     }
                 })
             if ($items.Count -eq 0) {
@@ -141,6 +187,44 @@ try {
                 Show-ErrorBox -Title $record.DisplayName -Message $_.Exception.Message
                 throw
             }
+        }
+        'status' {
+            $info = Write-InstallStatus
+            Write-Output "Version: $($info.Version)"
+            Write-Output "Root: $($info.Root)"
+            Write-Output "Shared home: $($info.SharedHome)"
+            Write-Output "AuthSwap active: $(if ($info.SwapActive) { $info.SwapActive } else { '(none)' })"
+            Write-Output "Clone: $(if ($info.CloneExe) { $info.CloneExe } else { '(missing — install Codex Desktop)' })"
+            Write-Output "Main account: $($info.MainAccount)"
+            Write-Output "Main backup: $($info.MainBackup)"
+            if ($info.Profiles.Count -eq 0) {
+                Write-Output 'Profiles: (none)'
+            }
+            else {
+                Write-Output 'Profiles:'
+                $info.Profiles | Format-Table -AutoSize | Out-String | Write-Output
+            }
+        }
+        'verify' {
+            $missing = @()
+            foreach ($name in Get-RequiredLauncherFiles) {
+                $here = Join-Path $PSScriptRoot $name
+                $installed = Join-Path $ParallelRoot $name
+                if (-not (Test-Path -LiteralPath $here) -and -not (Test-Path -LiteralPath $installed)) {
+                    $missing += $name
+                }
+            }
+            if ($missing.Count -gt 0) {
+                throw "Missing launcher files: $($missing -join ', ')"
+            }
+            $null = Get-CodexMultiProfileVersion
+            $cloneOk = $true
+            try { $null = Get-CodexCloneExe -ParallelRoot $ParallelRoot } catch { $cloneOk = $false }
+            Write-Output "OK module $(Get-CodexMultiProfileVersion)"
+            Write-Output "OK launcher files"
+            if ($cloneOk) { Write-Output 'OK ChatGPT.exe clone' }
+            else { Write-Warning 'ChatGPT.exe clone not found. Install Codex Desktop from the Store, then re-run install.' }
+            Write-Output 'verify passed'
         }
     }
 }
