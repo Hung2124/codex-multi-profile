@@ -9,7 +9,7 @@ jobs:
   test:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Parse and unit tests
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\Run-All.ps1
