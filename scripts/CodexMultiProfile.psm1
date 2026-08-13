@@ -185,6 +185,41 @@ function Hide-AuthEmail {
     return "$shown@$domain"
 }
 
+function Get-CodexInstallStatus {
+    param(
+        [string]$SourceHome = (Join-Path $env:USERPROFILE '.codex'),
+        [string]$ParallelRoot = (Get-CodexParallelRoot)
+    )
+    $lock = Join-Path $ParallelRoot '.authswap-active'
+    $swap = if (Test-Path -LiteralPath $lock) { (Get-Content -LiteralPath $lock -Raw).Trim() } else { '' }
+    $clone = $null
+    try { $clone = Get-CodexCloneExe -ParallelRoot $ParallelRoot } catch { $clone = $null }
+    $mainAuth = Join-Path $SourceHome 'auth.json'
+    $mainBak = Join-Path $SourceHome 'auth.json.__main__'
+    $profilesRoot = Join-Path $ParallelRoot 'profiles'
+    $profiles = @()
+    if (Test-Path -LiteralPath $profilesRoot) {
+        $profiles = @(Get-ChildItem $profilesRoot -Directory | ForEach-Object {
+                $email = Get-AuthEmailFromFile -Path (Join-Path $_.FullName 'auth.json')
+                [pscustomobject]@{
+                    Name    = $_.Name
+                    HasAuth = [bool](Test-Path -LiteralPath (Join-Path $_.FullName 'auth.json'))
+                    Account = Hide-AuthEmail -Email $email
+                }
+            })
+    }
+    [pscustomobject]@{
+        Version     = Get-CodexMultiProfileVersion
+        Root        = $ParallelRoot
+        SharedHome  = $SourceHome
+        SwapActive  = $swap
+        CloneExe    = $clone
+        MainAccount = Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $mainAuth)
+        MainBackup  = Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $mainBak)
+        Profiles    = $profiles
+    }
+}
+
 Export-ModuleMember -Function @(
     'Get-CodexMultiProfileVersion',
     'Get-CodexParallelRoot',
@@ -192,6 +227,7 @@ Export-ModuleMember -Function @(
     'Write-Utf8NoBom',
     'Get-AuthEmailFromFile',
     'Hide-AuthEmail',
+    'Get-CodexInstallStatus',
     'Test-NeedBootstrapLogin',
     'Test-ShouldSaveProfileAuth',
     'Get-CodexCloneExe',

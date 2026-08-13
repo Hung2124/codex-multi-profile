@@ -8,18 +8,22 @@
   .\CodexProfile.ps1 -Action launch -Name codex1
   .\CodexProfile.ps1 -Action list
   .\CodexProfile.ps1 -Action status
+  .\CodexProfile.ps1 -Action status -AsJson
   .\CodexProfile.ps1 -Action verify
+  .\CodexProfile.ps1 -Action remove -Name codex2 -Force
   .\CodexProfile.ps1 -Action stop -Name codex1
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut', 'status', 'verify')]
+    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut', 'status', 'verify', 'remove')]
     [string]$Action,
 
     [string]$Name = 'codex1',
     [string]$SourceHome = (Join-Path $env:USERPROFILE '.codex'),
-    [switch]$ForceRefreshClone
+    [switch]$ForceRefreshClone,
+    [switch]$AsJson,
+    [switch]$Force
 )
 
 $ErrorActionPreference = 'Stop'
@@ -53,35 +57,7 @@ function Get-RequiredLauncherFiles {
 }
 
 function Write-InstallStatus {
-    $lock = Join-Path $ParallelRoot '.authswap-active'
-    $swap = if (Test-Path -LiteralPath $lock) { (Get-Content -LiteralPath $lock -Raw).Trim() } else { '' }
-    $clone = $null
-    try { $clone = Get-CodexCloneExe -ParallelRoot $ParallelRoot } catch { $clone = $null }
-    $mainAuth = Join-Path $SourceHome 'auth.json'
-    $mainBak = Join-Path $SourceHome 'auth.json.__main__'
-    $profilesRoot = Join-Path $ParallelRoot 'profiles'
-    $profiles = @()
-    if (Test-Path -LiteralPath $profilesRoot) {
-        $profiles = @(Get-ChildItem $profilesRoot -Directory | ForEach-Object {
-                $email = Get-AuthEmailFromFile -Path (Join-Path $_.FullName 'auth.json')
-                [pscustomobject]@{
-                    Name    = $_.Name
-                    HasAuth = Test-Path -LiteralPath (Join-Path $_.FullName 'auth.json')
-                    Account = Hide-AuthEmail -Email $email
-                }
-            })
-    }
-
-    [pscustomobject]@{
-        Version      = Get-CodexMultiProfileVersion
-        Root         = $ParallelRoot
-        SharedHome   = $SourceHome
-        SwapActive   = $swap
-        CloneExe     = $clone
-        MainAccount  = Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $mainAuth)
-        MainBackup   = Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $mainBak)
-        Profiles     = $profiles
-    }
+    Get-CodexInstallStatus -SourceHome $SourceHome -ParallelRoot $ParallelRoot
 }
 
 function Show-ErrorBox([string]$Title, [string]$Message) {
@@ -190,6 +166,10 @@ try {
         }
         'status' {
             $info = Write-InstallStatus
+            if ($AsJson) {
+                $info | ConvertTo-Json -Depth 6
+                break
+            }
             Write-Output "Version: $($info.Version)"
             Write-Output "Root: $($info.Root)"
             Write-Output "Shared home: $($info.SharedHome)"
@@ -225,6 +205,21 @@ try {
             if ($cloneOk) { Write-Output 'OK ChatGPT.exe clone' }
             else { Write-Warning 'ChatGPT.exe clone not found. Install Codex Desktop from the Store, then re-run install.' }
             Write-Output 'verify passed'
+        }
+        'remove' {
+            if (-not $Force) {
+                throw "Refusing to delete profile '$Name' without -Force. ~/.codex is never deleted."
+            }
+            $record = Get-ProfileRecord -ProfileName $Name
+            Stop-ProfileProcesses -Key $record.Key
+            Start-Sleep -Seconds 1
+            if (Test-Path -LiteralPath $record.Root) {
+                Remove-Item -LiteralPath $record.Root -Recurse -Force
+            }
+            $desktop = [Environment]::GetFolderPath('Desktop')
+            $lnk = Join-Path $desktop ("{0}.lnk" -f $record.DisplayName)
+            Remove-Item -LiteralPath $lnk -Force -ErrorAction SilentlyContinue
+            Write-Output "Removed profile $($record.Key)"
         }
     }
 }
