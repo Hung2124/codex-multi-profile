@@ -17,6 +17,7 @@ Enter a number or name:
 1 / codex1 = launch secondary profile
 main = restore main account (Store Codex)
 list = list profiles
+status = masked AuthSwap status
 or type a new profile name to create + launch
 "@, 'Codex Profiles', '1')
 
@@ -29,6 +30,7 @@ function Invoke-Profile([string]$Action, [string]$Name) {
 
 switch -Regex ($choice) {
     '^(?i)list$' { Invoke-Profile -Action list -Name '_' }
+    '^(?i)status|verify$' { Invoke-Profile -Action $choice.ToLowerInvariant() -Name '_' }
     '^(?i)main|goc|home$' {
         $main = Join-Path $root 'Launch-CodexMain.ps1'
         & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $main
