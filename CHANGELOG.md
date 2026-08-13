@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented here.
 
+## 0.1.1 — 2026-08-13
+
+### Added
+- `CodexProfile.ps1 -Action status` (masked emails) and `-Action verify`
+- `Update-CodexMultiProfile.ps1` to pull and reinstall
+- FAQ, feature-request template, Dependabot for GitHub Actions
+
+### Fixed
+- Uninstall now removes every Desktop shortcut whose target is CodexParallelDesktop
+- CI uses `actions/checkout@v5` and `tests/Run-All.ps1`
+
+### Security
+- Status/list never print a full ChatGPT email
+
 ## 0.1.0 — 2026-08-13
 
 ### Added

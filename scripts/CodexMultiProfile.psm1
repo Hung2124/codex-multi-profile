@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 Set-StrictMode -Version Latest
 
-$script:ModuleVersion = '0.1.0'
+$script:ModuleVersion = '0.1.1'
 
 function Get-CodexMultiProfileVersion {
     $candidates = @(

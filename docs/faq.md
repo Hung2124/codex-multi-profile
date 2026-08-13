@@ -18,11 +18,13 @@ Only the first characters plus the domain. Full addresses are never printed by `
 
 ## How do I update?
 
+From a git clone:
+
 ```powershell
-git pull
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-CodexMultiProfile.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action verify
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Update-CodexMultiProfile.ps1
 ```
+
+That pulls `main` (fast-forward only) and re-runs the installer, then `verify`.
 
 ## How do I check the install?
 
