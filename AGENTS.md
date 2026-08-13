@@ -6,4 +6,4 @@ This repository is a **Windows-only** Codex Desktop multi-account helper.
 - Never commit `auth.json`, backups, or `launch-trace.log`.
 - Do not replace the `.cmd` env wrapper with `Start-Process` alone.
 - Write `config.toml` without a UTF-8 BOM.
-- Run `tests/Invoke-ParseCheck.ps1` and `tests/ConvertTo-ProfileKey.Tests.ps1` after script edits.
+- Run `tests/Run-All.ps1` after script edits.

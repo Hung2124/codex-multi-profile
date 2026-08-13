@@ -56,6 +56,7 @@ $desktop = [Environment]::GetFolderPath('Desktop')
 New-Item -ItemType Directory -Force -Path $ParallelRoot, (Join-Path $ParallelRoot "profiles\$key") | Out-Null
 
 $files = @(
+    'CodexMultiProfile.psm1',
     'Launch-CodexProfile.ps1',
     'Launch-CodexMain.ps1',
     'watch-authswap-restore.ps1',

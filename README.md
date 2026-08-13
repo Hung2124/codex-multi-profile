@@ -1,38 +1,38 @@
 # Codex Multi-Profile
 
-Windows helper for **OpenAI Codex Desktop**: extra ChatGPT logins, one shared workspace.
+[![CI](https://github.com/Hung2124/codex-multi-profile/actions/workflows/ci.yml/badge.svg)](https://github.com/Hung2124/codex-multi-profile/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Hung2124/codex-multi-profile)](https://github.com/Hung2124/codex-multi-profile/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Windows](https://img.shields.io/badge/platform-Windows-0078D4.svg)](#install)
 
-The Store app only keeps one `~\.codex\auth.json`. A second `CODEX_HOME` often **does not work** — the app-server still reads the main token and you land on the wrong account. This repo swaps the token the app actually reads (**AuthSwap**), then restores the main account when the profile window closes.
+Two ChatGPT logins on **Codex Desktop for Windows**. One shared workspace.
 
-> Unofficial. Not affiliated with OpenAI. Windows + Codex Desktop (Microsoft Store) only.
+A second `CODEX_HOME` often fails: the app-server still reads `~\.codex\auth.json` and you land on the **main** account. This repo swaps the token the app actually reads (**AuthSwap**), then restores the main account when the profile window closes.
 
-## What you get
+[Tiếng Việt](README.vi.md)
 
-- **codex1 / codex2 / …** — each profile has its own ChatGPT login
-- **ShareLive** — sessions, skills, MCP, memories, and projects stay in `~\.codex`
-- **Codex Main** shortcut — put the original account back, then open the Store app
-- **Agent skill** — drop `SKILL.md` into Codex or Cursor so the agent follows the same launch rules
+![Hero](docs/images/hero.svg)
 
-```
-Desktop "codex1"
-        │
-        ▼
-Launch-CodexProfile.ps1
-        │  backup ~/.codex/auth.json  →  auth.json.__main__
-        │  copy profiles/codex1/auth.json  →  ~/.codex/auth.json
-        │  start cloned ChatGPT.exe --user-data-dir=profiles\codex1
-        ▼
-watcher (on close)
-        │  save secondary token back to the profile
-        │  restore auth.json.__main__
-        ▼
-main account is intact
-```
+> Unofficial. Not affiliated with OpenAI. Requires Codex Desktop from the Microsoft Store.
+
+## Why this exists
+
+| What you tried | What actually happens |
+|---|---|
+| Copy `~\.codex` to another folder and set `CODEX_HOME` | Desktop still shows the main ChatGPT user |
+| `Start-Process` with `$env:CODEX_HOME` | Env is often dropped; you get the wrong account |
+| Run `ChatGPT.exe` from `WindowsApps` | Access Denied |
+| Launch `Codex.exe` | Process exits 1 |
+
+AuthSwap keeps sessions, skills, MCP, and memories in `~\.codex`. Only `auth.json` moves.
+
+![AuthSwap flow](docs/images/flow.svg)
 
 ## Install
 
 1. Install [Codex Desktop](https://chatgpt.com/codex) from the Microsoft Store and sign in once (this is the **main** account).
-2. Clone and run the installer **in Windows PowerShell** (not from inside a running Codex window if you can avoid it):
+2. Close Codex.
+3. Run **Windows PowerShell**:
 
 ```powershell
 git clone https://github.com/Hung2124/codex-multi-profile.git
@@ -40,10 +40,19 @@ cd codex-multi-profile
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-CodexMultiProfile.ps1
 ```
 
-3. Use the new Desktop shortcuts:
-   - **Codex1** — secondary account (first run asks you to sign in)
-   - **Codex Main** — restore the original account and open Store Codex
-   - **Codex Profiles** — list / create another profile
+Or one line (downloads the repo zip, then runs the same installer):
+
+```powershell
+irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.ps1 | iex
+```
+
+4. Use the Desktop shortcuts:
+
+| Shortcut | Does |
+|---|---|
+| **Codex1** | Secondary ChatGPT login (first run asks you to sign in) |
+| **Codex Main** | Restore the original account and open Store Codex |
+| **Codex Profiles** | List / create another profile |
 
 Close one Codex UI before opening the other.
 
@@ -58,22 +67,27 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Ac
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action list
 ```
 
+```powershell
+# tests (no Codex UI required)
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\Run-All.ps1
+```
+
 ## Agent skill
 
-After install, the skill is copied to:
+Install copies `SKILL.md` to:
 
 - `%USERPROFILE%\.codex\skills\codex-multi-profile\`
 - `%USERPROFILE%\.cursor\skills\codex-multi-profile\`
 
-Or copy `SKILL.md` + `scripts\` yourself. The skill tells Codex/Cursor **not** to launch `Codex.exe`, **not** to use `WindowsApps`, and **not** to `Start-Process` without a cmd wrapper.
+The skill tells Codex/Cursor **not** to launch `Codex.exe`, **not** to use `WindowsApps`, and **not** to `Start-Process` without a `.cmd` wrapper.
 
 ## Safety
 
 | Does | Does not |
 |---|---|
-| Copies `auth.json` **locally** between `~\.codex` and `profiles\<name>` | Upload tokens, log passwords, or set a permanent `CODEX_HOME` |
-| Clones `ChatGPT.exe` out of the Store package so it can start | Run the Store binary in-place (Access Denied) |
-| Restores the main account when the profile exits | Touch `~\.codex` history/skills except the auth swap |
+| Copies `auth.json` **locally** between `~\.codex` and `profiles\<name>` | Upload tokens or set a permanent `CODEX_HOME` |
+| Clones `ChatGPT.exe` out of the Store package so it can start | Run the Store binary in-place |
+| Restores main auth on close, and **refuses** to save if active email == main | Delete `~\.codex` history |
 
 Do not commit `auth.json`, `*.bak`, or `launch-trace.log` (the log can contain emails).
 
@@ -88,26 +102,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Uninstall-CodexMul
 
 ## Docs
 
-- [Architecture](docs/architecture.md) — why AuthSwap exists
-- [Troubleshooting](docs/troubleshooting.md) — wrong account, Access Denied, BOM, poisoned auth
+- [Architecture](docs/architecture.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md)
+- [Security](SECURITY.md)
 
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
-## Tiếng Việt
-
-Codex Desktop trên Windows chỉ giữ một `~\.codex\auth.json`. Đặt `CODEX_HOME` thứ hai thường **không** đổi được acc — app vẫn đọc token acc chính.
-
-Repo này **AuthSwap**: lúc mở profile thì chép token acc phụ vào `~\.codex\auth.json`, lúc đóng thì restore acc chính. Session / skill / MCP vẫn dùng chung.
-
-Cài:
-
-```powershell
-git clone https://github.com/Hung2124/codex-multi-profile.git
-cd codex-multi-profile
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-CodexMultiProfile.ps1
-```
-
-Dùng shortcut **Codex1** (acc phụ) hoặc **Codex Main** (acc gốc). Không mở hai cái cùng lúc.

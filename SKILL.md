@@ -43,9 +43,10 @@ The Desktop app-server sometimes **ignores** `CODEX_HOME` and reads `~\.codex\au
 | Item | Path |
 |---|---|
 | Install root | `%LOCALAPPDATA%\CodexParallelDesktop` |
+| Shared module | `CodexMultiProfile.psm1` |
 | Profile launcher | `Launch-CodexProfile.ps1` |
 | Restore main | `Launch-CodexMain.ps1` |
-| Manager | `CodexProfile.ps1` |
+| Manager | `CodexProfile.ps1` (`new`, `list`, `stop`, `shortcut`, `launch`) |
 | Profiles | `...\profiles\<name>\` |
 | Clone | `...\versions\<ver>\app\ChatGPT.exe` |
 | Shared home | `%USERPROFILE%\.codex` |
@@ -73,7 +74,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Ac
 2. "Create another profile" → `-Action new`, then launch with `Launch-CodexProfile.ps1`.
 3. Wrong account in the UI → compare emails in the two `auth.json` files; fix launch (cmd wrapper); do not tell the user to log in again if profile auth is still valid.
 4. Access Denied / empty path / exit 1 → clone `ChatGPT.exe`, never `WindowsApps`, never empty `InstallLocation`.
-5. After editing scripts, copy them to `%LOCALAPPDATA%\CodexParallelDesktop` and to `scripts\` in this skill.
+5. After editing scripts, copy `CodexMultiProfile.psm1` **and** the launchers into `%LOCALAPPDATA%\CodexParallelDesktop` and into `scripts\` in this skill. Launchers import the module from `$PSScriptRoot`.
 
 ## Poisoned profile auth
 

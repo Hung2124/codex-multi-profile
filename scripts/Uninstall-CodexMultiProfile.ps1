@@ -20,7 +20,7 @@ if (-not (Test-Path -LiteralPath $root)) {
 }
 
 Get-ChildItem -LiteralPath $root -File | Where-Object {
-    $_.Extension -in '.ps1', '.vbs', '.cmd', '.log' -or $_.Name -eq '.authswap-active'
+    $_.Extension -in '.ps1', '.psm1', '.vbs', '.cmd', '.log' -or $_.Name -eq '.authswap-active'
 } | Remove-Item -Force -ErrorAction SilentlyContinue
 
 if ($PurgeProfiles) {

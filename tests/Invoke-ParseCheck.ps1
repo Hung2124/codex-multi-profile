@@ -1,10 +1,15 @@
 #Requires -Version 5.1
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$scripts = Get-ChildItem -LiteralPath (Join-Path $root 'scripts') -Filter '*.ps1' -File
 $failed = @()
 
-foreach ($file in $scripts) {
+$files = @()
+$files += Get-ChildItem -LiteralPath (Join-Path $root 'scripts') -Include '*.ps1', '*.psm1' -File -Recurse
+$files += Get-ChildItem -LiteralPath (Join-Path $root 'tests') -Filter '*.ps1' -File
+$files += Get-Item -LiteralPath (Join-Path $root 'install.ps1') -ErrorAction SilentlyContinue
+
+foreach ($file in $files) {
+    if (-not $file) { continue }
     $tokens = $null
     $errors = $null
     [void][System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors)
@@ -16,17 +21,9 @@ foreach ($file in $scripts) {
     }
 }
 
-$testFile = $MyInvocation.MyCommand.Path
-$tokens = $null
-$errors = $null
-[void][System.Management.Automation.Language.Parser]::ParseFile($testFile, [ref]$tokens, [ref]$errors)
-if ($errors -and $errors.Count -gt 0) {
-    $failed += [pscustomobject]@{ File = 'Invoke-ParseCheck.ps1'; Error = ($errors | ForEach-Object { $_.ToString() }) -join '; ' }
-}
-
 if ($failed.Count -gt 0) {
-    $failed | Format-Table -AutoSize | Out-String | Write-Output
+    $failed | Format-List | Out-String | Write-Output
     throw "Parse failed for $($failed.Count) file(s)."
 }
 
-Write-Output "OK: parsed $($scripts.Count) scripts with 0 errors."
+Write-Output "OK: parsed $($files.Count) files with 0 errors."

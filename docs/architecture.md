@@ -2,17 +2,13 @@
 
 ## Problem
 
-Codex Desktop on Windows stores ChatGPT auth at:
+Codex Desktop on Windows stores ChatGPT auth at `%USERPROFILE%\.codex\auth.json`.
 
-```
-%USERPROFILE%\.codex\auth.json
-```
-
-People try a second profile with `CODEX_HOME=...\profiles\codex1\.codex`. That often fails: the Electron app-server still reads `~\.codex\auth.json`, so the window shows the **main** account. Owl logs may also show `Ignoring late userData path change` if `CODEX_ELECTRON_USER_DATA_PATH` ≠ `--user-data-dir`.
+A second `CODEX_HOME` often fails: the Electron app-server still reads the main token. Owl logs may also show `Ignoring late userData path change` if `CODEX_ELECTRON_USER_DATA_PATH` ≠ `--user-data-dir`.
 
 ## AuthSwap
 
-Keep **one** real Codex home (`~\.codex`) for data. Only the token file moves.
+Keep **one** Codex home (`~\.codex`) for data. Only the token file moves.
 
 ```mermaid
 sequenceDiagram
@@ -26,30 +22,35 @@ sequenceDiagram
     User->>Launch: open Codex1
     Launch->>Disk: copy to auth.json.__main__
     Launch->>Profile: copy into ~/.codex/auth.json
-    Launch->>App: start with --user-data-dir=profile root
+    Launch->>App: start with cmd wrapper + --user-data-dir
     Launch->>Watch: start
     User->>App: close window
-    Watch->>Profile: save active token if it is not main
+    Watch->>Profile: save only if email is not main
     Watch->>Disk: restore auth.json.__main__
 ```
 
+Shared logic lives in `scripts/CodexMultiProfile.psm1`:
+
+- `Get-AuthEmailFromFile` — JWT `email` from `auth.json`
+- `Test-NeedBootstrapLogin` — missing or poisoned profile auth
+- `Test-ShouldSaveProfileAuth` — poison guard on close / Codex Main
+- `Write-Utf8NoBom` — PowerShell 5.1 `Set-Content -Encoding UTF8` writes a BOM
+- `New-CodexEnvCmd` — `CODEX_HOME` via `set` + `start`, not `Start-Process` alone
+
 ## Process rules
 
-1. **Clone, don't run Store in-place.** `WindowsApps\...\ChatGPT.exe` is Access Denied. Copy the `app` folder to `%LOCALAPPDATA%\CodexParallelDesktop\versions\<ver>\app`.
-2. **Launch via `.cmd`.** `Start-Process` / `UseShellExecute` often drops `CODEX_HOME`. The launcher writes `launch-<name>-env.cmd` with `set` lines, then `start`s it.
-3. **Same path for UI data.** `CODEX_ELECTRON_USER_DATA_PATH` and `--user-data-dir` are both the profile root.
-4. **UTF-8 without BOM** for anything Codex parses (`config.toml`). Windows PowerShell 5.1 `Set-Content -Encoding UTF8` writes a BOM.
+1. Clone `ChatGPT.exe` out of the Store package. `WindowsApps` is Access Denied.
+2. Launch via `.cmd`. `Start-Process` often drops `CODEX_HOME`.
+3. `CODEX_ELECTRON_USER_DATA_PATH` and `--user-data-dir` are both the profile **root**.
+4. Never set a persistent user-level `CODEX_HOME`.
 
 ## Files
 
 | Script | Role |
 |---|---|
-| `Install-CodexMultiProfile.ps1` | Copy launchers, clone app, Desktop shortcuts, install skill |
+| `install.ps1` | Download zip + run installer |
+| `Install-CodexMultiProfile.ps1` | Copy launchers, clone app, shortcuts, skill |
 | `Launch-CodexProfile.ps1` | AuthSwap in + start clone |
 | `watch-authswap-restore.ps1` | AuthSwap out on close |
 | `Launch-CodexMain.ps1` | Save secondary if needed, restore main, start Store app |
-| `CodexProfile.ps1` | `new` / `list` / `stop` / `sync` / `share` |
-
-## What is never shared
-
-`auth.json` is per profile. Junctions (ShareLive) cover `sessions`, `skills`, `memories`, `plugins`, `vendor_imports`, `sqlite`. Database files used as session index are copied, not junctioned, to avoid two writers on one SQLite WAL.
+| `CodexProfile.ps1` | `new` / `list` / `stop` / `shortcut` / `launch` |

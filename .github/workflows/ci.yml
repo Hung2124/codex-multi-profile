@@ -6,12 +6,13 @@ on:
   pull_request:
 
 jobs:
-  parse:
+  test:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Parse PowerShell scripts
+      - name: Parse and unit tests
         shell: powershell
         run: |
           powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\Invoke-ParseCheck.ps1
           powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\ConvertTo-ProfileKey.Tests.ps1
+          powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\AuthSwap.Tests.ps1

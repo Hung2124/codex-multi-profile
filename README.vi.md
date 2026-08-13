@@ -1,0 +1,40 @@
+# Codex Multi-Profile
+
+Hai tài khoản ChatGPT trên **Codex Desktop Windows**. Một workspace dùng chung.
+
+`CODEX_HOME` thứ hai thường **không** đổi acc — app vẫn đọc `~\.codex\auth.json`. Repo này **AuthSwap**: lúc mở profile thì chép token acc phụ vào đúng file app đọc, lúc đóng thì restore acc chính.
+
+[English README](README.md)
+
+![Hero](docs/images/hero.svg)
+
+> Không chính thức, không liên kết OpenAI. Cần Codex Desktop từ Microsoft Store.
+
+## Cài
+
+1. Cài Codex Desktop, đăng nhập acc **chính** một lần, rồi đóng app.
+2. PowerShell:
+
+```powershell
+git clone https://github.com/Hung2124/codex-multi-profile.git
+cd codex-multi-profile
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-CodexMultiProfile.ps1
+```
+
+3. Shortcut **Codex1** = acc phụ (lần đầu sẽ kêu đăng nhập). **Codex Main** = restore acc gốc rồi mở Store Codex.
+
+Không mở hai cửa sổ cùng lúc.
+
+## Gỡ
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Uninstall-CodexMultiProfile.ps1
+```
+
+Không xóa `~\.codex`.
+
+## Tài liệu
+
+- [Architecture](docs/architecture.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Changelog](CHANGELOG.md)
