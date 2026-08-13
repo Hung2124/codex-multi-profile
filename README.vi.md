@@ -23,7 +23,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-CodexMulti
 
 3. Shortcut **Codex1** = acc phụ (lần đầu sẽ kêu đăng nhập). **Codex Main** = restore acc gốc rồi mở Store Codex.
 
-Không mở hai cửa sổ cùng lúc.
+## Cài xong kiểm tra
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action verify
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action status
+```
+
+`status` che email (ví dụ `al***@gmail.com`). Không mở Codex1 và Codex Main cùng lúc.
 
 ## Gỡ
 
