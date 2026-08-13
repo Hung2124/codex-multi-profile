@@ -5,9 +5,11 @@ This project launches a local clone of Codex Desktop and temporarily replaces
 
 ## Do not
 
-- Open an issue, PR, or gist that includes `auth.json`, `id_token`, refresh tokens, or full `launch-trace.log`
+- Open an issue, PR, or gist that includes `auth.json`, `id_token`, or refresh tokens
 - Commit files under `%LOCALAPPDATA%\CodexParallelDesktop\profiles\`
 - Set a user-level `CODEX_HOME` that points at someone else's machine
+
+`launch-trace.log` is written locally and **masks** ChatGPT emails (`al***@example.com`). Still do not paste the whole file if you are unsure — it can contain paths on your machine.
 
 ## Report privately
 

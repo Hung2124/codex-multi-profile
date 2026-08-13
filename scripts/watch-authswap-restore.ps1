@@ -29,6 +29,14 @@ function Get-EmailFallback([string]$Path) {
     return 'PARSE_ERR'
 }
 
+function Get-MaskedEmailFallback([string]$Path) {
+    $email = Get-EmailFallback -Path $Path
+    if (Get-Command Hide-AuthEmail -ErrorAction SilentlyContinue) {
+        return Hide-AuthEmail -Email $email
+    }
+    return $email
+}
+
 Start-Sleep -Seconds 8
 while ($true) {
     $running = @(Get-CimInstance Win32_Process -Filter "Name='ChatGPT.exe'" -ErrorAction SilentlyContinue |
@@ -40,7 +48,7 @@ while ($true) {
 $activeEmail = Get-EmailFallback $MainAuth
 $mainEmail = Get-EmailFallback $MainAuthBak
 $prevProfileEmail = Get-EmailFallback $ProfileAuth
-Write-WatchLog "close detected active=$activeEmail mainBak=$mainEmail prevProfile=$prevProfileEmail"
+Write-WatchLog "close detected active=$(Get-MaskedEmailFallback $MainAuth) mainBak=$(Get-MaskedEmailFallback $MainAuthBak) prevProfile=$(Get-MaskedEmailFallback $ProfileAuth)"
 
 $shouldSave = $false
 if (Get-Command Test-ShouldSaveProfileAuth -ErrorAction SilentlyContinue) {
@@ -57,16 +65,16 @@ if ($shouldSave -and (Test-Path -LiteralPath $MainAuth)) {
     New-Item -ItemType Directory -Force -Path (Split-Path $mirror) -ErrorAction SilentlyContinue | Out-Null
     Copy-Item -LiteralPath $MainAuth -Destination $mirror -Force -ErrorAction SilentlyContinue
     Copy-Item -LiteralPath $MainAuth -Destination $bak -Force -ErrorAction SilentlyContinue
-    Write-WatchLog "saved profile auth -> $activeEmail"
+    Write-WatchLog "saved profile auth -> $(Get-MaskedEmailFallback $MainAuth)"
 }
 else {
-    Write-WatchLog "SKIP save profile (active looks like main or invalid) — keep prev=$prevProfileEmail"
+    Write-WatchLog "SKIP save profile (active looks like main or invalid) — keep prev=$(Get-MaskedEmailFallback $ProfileAuth)"
 }
 
 if (Test-Path -LiteralPath $MainAuthBak) {
     Copy-Item -LiteralPath $MainAuthBak -Destination $MainAuth -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $MainAuthBak -Force -ErrorAction SilentlyContinue
-    Write-WatchLog "restored main -> $(Get-EmailFallback $MainAuth)"
+    Write-WatchLog "restored main -> $(Get-MaskedEmailFallback $MainAuth)"
 }
 Remove-Item -LiteralPath $SwapLock -Force -ErrorAction SilentlyContinue
 Write-WatchLog 'swap lock cleared'

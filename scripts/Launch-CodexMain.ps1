@@ -28,7 +28,7 @@ if (Test-Path -LiteralPath $swapLock) {
         $profileBak = Join-Path $ParallelRoot "profiles\$key\auth.json.secondary.bak"
         $active = Get-AuthEmailFromFile -Path $mainAuth
         $mainEmail = Get-AuthEmailFromFile -Path $mainAuthBak
-        Write-LaunchLog "swap active key=$key active=$active mainBak=$mainEmail"
+        Write-LaunchLog "swap active key=$key active=$(Hide-AuthEmail -Email $active) mainBak=$(Hide-AuthEmail -Email $mainEmail)"
         if ((Test-Path -LiteralPath $mainAuth) -and (Test-ShouldSaveProfileAuth -ActiveEmail $active -MainBackupEmail $mainEmail)) {
             New-Item -ItemType Directory -Force -Path (Split-Path $profileAuth) | Out-Null
             Copy-Item -LiteralPath $mainAuth -Destination $profileAuth -Force
@@ -36,7 +36,7 @@ if (Test-Path -LiteralPath $swapLock) {
             $mirror = Join-Path $ParallelRoot "profiles\$key\.codex\auth.json"
             New-Item -ItemType Directory -Force -Path (Split-Path $mirror) | Out-Null
             Copy-Item -LiteralPath $mainAuth -Destination $mirror -Force
-            Write-LaunchLog "saved secondary to profile before restore -> $active"
+            Write-LaunchLog "saved secondary to profile before restore -> $(Hide-AuthEmail -Email $active)"
         }
         else {
             Write-LaunchLog 'skip profile save (active is main or invalid)'
@@ -52,7 +52,7 @@ Start-Sleep -Seconds 1
 if (Test-Path -LiteralPath $mainAuthBak) {
     Copy-Item -LiteralPath $mainAuthBak -Destination $mainAuth -Force
     Remove-Item -LiteralPath $mainAuthBak -Force -ErrorAction SilentlyContinue
-    Write-LaunchLog "restored main -> $(Get-AuthEmailFromFile -Path $mainAuth)"
+    Write-LaunchLog "restored main -> $(Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $mainAuth))"
 }
 Remove-Item -LiteralPath $swapLock -Force -ErrorAction SilentlyContinue
 

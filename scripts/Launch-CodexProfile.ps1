@@ -40,7 +40,7 @@ function Restore-MainAuth {
     if (Test-Path -LiteralPath $mainAuthBak) {
         Copy-Item -LiteralPath $mainAuthBak -Destination $mainAuth -Force
         Remove-Item -LiteralPath $mainAuthBak -Force -ErrorAction SilentlyContinue
-        Write-LaunchLog "restored main auth -> $(Get-AuthEmailFromFile -Path $mainAuth)"
+        Write-LaunchLog "restored main auth -> $(Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $mainAuth))"
     }
     Remove-Item -LiteralPath $swapLock -Force -ErrorAction SilentlyContinue
 }
@@ -66,7 +66,7 @@ try {
     $needBootstrap = Test-NeedBootstrapLogin -ProfileEmail $profileEmail -MainEmail $mainEmailNow -Force:$BootstrapLogin
 
     if ($needBootstrap -and -not $BootstrapLogin -and $profileEmail -ne 'MISSING' -and $profileEmail -eq $mainEmailNow) {
-        Write-LaunchLog "WARN profile auth same as main ($profileEmail) -> bootstrap"
+        Write-LaunchLog "WARN profile auth same as main ($(Hide-AuthEmail -Email $profileEmail)) -> bootstrap"
         if (Test-Path -LiteralPath $profileAuth) {
             Move-Item -LiteralPath $profileAuth -Destination "$profileAuth.corrupted-same-as-main-$(Get-Date -Format yyyyMMdd-HHmmss)" -Force
         }
@@ -81,8 +81,8 @@ try {
         }
     }
 
-    Write-LaunchLog "profile auth=$(Get-AuthEmailFromFile -Path $profileAuth) needBootstrap=$needBootstrap"
-    Write-LaunchLog "main auth before=$mainEmailNow"
+    Write-LaunchLog "profile auth=$(Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $profileAuth)) needBootstrap=$needBootstrap"
+    Write-LaunchLog "main auth before=$(Hide-AuthEmail -Email $mainEmailNow)"
 
     Stop-AllCodex
     Start-Sleep -Seconds 2
@@ -113,7 +113,7 @@ try {
     }
     else {
         Copy-Item -LiteralPath $profileAuth -Destination $mainAuth -Force
-        Write-LaunchLog "swapped in profile auth -> $(Get-AuthEmailFromFile -Path $mainAuth)"
+        Write-LaunchLog "swapped in profile auth -> $(Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $mainAuth))"
     }
 
     Set-Content -LiteralPath $swapLock -Value $key -Encoding ASCII
@@ -143,7 +143,7 @@ try {
     ) | Out-Null
 
     Write-LaunchLog 'DONE ok authswap'
-    $msg = if ($needBootstrap) { 'BOOTSTRAP login — sign in with the secondary account, then close the app' } else { "AuthSwap activeAuth=$(Get-AuthEmailFromFile -Path $mainAuth)" }
+    $msg = if ($needBootstrap) { 'BOOTSTRAP login — sign in with the secondary account, then close the app' } else { "AuthSwap activeAuth=$(Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $mainAuth))" }
     Write-Output "Launched $key $msg pid=$($proc.ProcessId)"
 }
 catch {
