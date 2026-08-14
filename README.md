@@ -67,8 +67,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Ac
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action list
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action status
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action status -AsJson
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action doctor
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action processes
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action verify
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action remove -Name codex2 -Force
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\Redact-LaunchTrace.ps1"
 ```
 
 ```powershell
@@ -93,7 +96,7 @@ The skill tells Codex/Cursor **not** to launch `Codex.exe`, **not** to use `Wind
 | Clones `ChatGPT.exe` out of the Store package so it can start | Run the Store binary in-place |
 | Restores main auth on close, and **refuses** to save if active email == main | Delete `~\.codex` history |
 
-Do not commit `auth.json`, `*.bak`, or `launch-trace.log` (the log can contain emails).
+Do not commit `auth.json` or `*.bak`. Prefer `Redact-LaunchTrace.ps1` before pasting logs.
 
 ## Uninstall
 
@@ -109,6 +112,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Uninstall-CodexMul
 - [Architecture](docs/architecture.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [FAQ](docs/faq.md)
+- [Recipes](docs/recipes.md)
+- [Support](SUPPORT.md)
 - [Changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security](SECURITY.md)

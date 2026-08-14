@@ -27,10 +27,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-CodexMulti
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action verify
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action doctor
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action status
 ```
 
-`status` che email (ví dụ `al***@gmail.com`). Không mở Codex1 và Codex Main cùng lúc.
+`status` / `doctor` che email (ví dụ `al***@gmail.com`). Không mở Codex1 và Codex Main cùng lúc.
 
 ## Gỡ
 

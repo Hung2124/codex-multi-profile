@@ -46,5 +46,14 @@ Emails in that JSON are already masked.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action status
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action doctor
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action verify
 ```
+
+## How do I make a safe bug-report log?
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\Redact-LaunchTrace.ps1"
+```
+
+Paste the `launch-trace.redacted-*.txt` file, not `auth.json`.

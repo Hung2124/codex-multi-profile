@@ -67,6 +67,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Ac
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action list
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action status
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action status -AsJson
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action doctor
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action processes
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action verify
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action stop -Name codex1
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action remove -Name codex2 -Force
@@ -79,8 +81,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Ac
 3. Wrong account in the UI → compare emails in the two `auth.json` files; fix launch (cmd wrapper); do not tell the user to log in again if profile auth is still valid.
 4. Access Denied / empty path / exit 1 → clone `ChatGPT.exe`, never `WindowsApps`, never empty `InstallLocation`.
 5. After editing scripts, copy `CodexMultiProfile.psm1` **and** the launchers into `%LOCALAPPDATA%\CodexParallelDesktop` and into `scripts\` in this skill. Launchers import the module from `$PSScriptRoot`.
-6. "Is it installed / which account is active?" → `-Action status` (emails are masked) then `-Action verify`.
-
+6. "Is it installed / which account is active?" → `-Action status` (emails are masked) then `-Action doctor` / `-Action verify`.
+7. User wants a safe log for GitHub → `Redact-LaunchTrace.ps1`.
 ## Poisoned profile auth
 
 If the user opens **Codex Main** while a profile is still running, restore can write the **main** token into `profiles\<name>\auth.json`.

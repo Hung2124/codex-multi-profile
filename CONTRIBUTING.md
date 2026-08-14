@@ -9,7 +9,8 @@ PRs that encode a **verified Windows Codex Desktop** behavior are welcome. Keep 
 3. Keep `SKILL.md` under ~500 lines. Put long explanations in `docs/`.
 4. Launch paths must keep using a `.cmd` wrapper for `CODEX_HOME`. Do not "simplify" to `Start-Process` alone.
 5. Copy `CodexMultiProfile.psm1` next to every launcher. Launchers import it from `$PSScriptRoot`.
-6. Run:
+6. Read [docs/contributing-notes.md](docs/contributing-notes.md) for AuthSwap invariants.
+7. Run:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\Run-All.ps1
@@ -17,6 +18,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\Run-All.ps1
 
 ## Scope
 
-In scope: AuthSwap, Store clone, shortcuts, the agent skill, tests for the poison guard.
+In scope: AuthSwap, Store clone, shortcuts, the agent skill, doctor/redact tooling, tests for the poison guard.
 
 Out of scope: unofficial API proxies, automating ChatGPT sign-in, or shipping tokens.

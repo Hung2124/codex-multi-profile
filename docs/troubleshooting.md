@@ -1,27 +1,36 @@
 # Troubleshooting
 
-Redact emails before pasting logs. Default log:
+Start with:
+
+```powershell
+$root = "$env:LOCALAPPDATA\CodexParallelDesktop"
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action doctor
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\Redact-LaunchTrace.ps1"
+```
+
+Default log (emails are masked by the launcher; still prefer the redactor before pasting):
 
 `%LOCALAPPDATA%\CodexParallelDesktop\launch-trace.log`
+
+## Stale AuthSwap lock
+
+`doctor` reports `stale-swap-lock` when `.authswap-active` exists but no clone is running.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\Launch-CodexMain.ps1"
+```
+
+That restores main auth and clears the lock.
 
 ## Wrong account in the profile window
 
 The UI shows the main ChatGPT account even though you launched `codex1`.
 
 1. Close every Codex window.
-2. Compare emails (do not paste tokens):
+2. Run `doctor` (preferred) or compare masked status:
 
 ```powershell
-# emails only — from id_token payload
-function EmailOf($path) {
-  if (-not (Test-Path $path)) { return 'MISSING' }
-  $j = Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json
-  $p = $j.tokens.id_token.Split('.')[1].Replace('-','+').Replace('_','/')
-  while ($p.Length % 4) { $p += '=' }
-  ([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($p)) | ConvertFrom-Json).email
-}
-EmailOf "$env:USERPROFILE\.codex\auth.json"
-EmailOf "$env:LOCALAPPDATA\CodexParallelDesktop\profiles\codex1\auth.json"
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action status
 ```
 
 3. Launch with `Launch-CodexProfile.ps1`, not a raw `Start-Process` on `ChatGPT.exe`.
@@ -41,6 +50,7 @@ You opened **Codex Main** while Codex1 was still running. The main token got wri
 
 - Current scripts refuse to save when active email == `auth.json.__main__`.
 - If it already happened: close everything, delete the poisoned `profiles\codex1\auth.json` (keep `auth.json.secondary.bak` if it still has the secondary email), launch Codex1, sign in again.
+- `doctor` flags this as `poisoned-profile`.
 
 ## `Ignoring late userData path change`
 
@@ -48,8 +58,8 @@ You opened **Codex Main** while Codex1 was still running. The main token got wri
 
 ## `config.toml` ignored
 
-File was saved with a UTF-8 BOM (PowerShell 5.1 `Set-Content -Encoding UTF8`). Recreate it with `[IO.File]::WriteAllText(..., UTF8Encoding $false)` or let Codex rewrite it.
+File was saved with a UTF-8 BOM (PowerShell 5.1 `Set-Content -Encoding UTF8`). Recreate it with `[IO.File]::WriteAllText(..., UTF8Encoding $false)` or let Codex rewrite it. `doctor` flags `config-bom`.
 
 ## Two windows, one account
 
-Do not run Store Codex and a cloned profile together. AuthSwap owns `~\.codex\auth.json` for one process at a time. Use **Codex Main** to restore, then open Store Codex.
+Do not run Store Codex and a cloned profile together. AuthSwap owns `~\.codex\auth.json` for one process at a time. Use **Codex Main** to restore, then open Store Codex. `doctor` flags `dual-window`.
