@@ -11,6 +11,8 @@
   .\CodexProfile.ps1 -Action status -AsJson
   .\CodexProfile.ps1 -Action doctor
   .\CodexProfile.ps1 -Action processes
+  .\CodexProfile.ps1 -Action repair
+  .\CodexProfile.ps1 -Action sync-check
   .\CodexProfile.ps1 -Action verify
   .\CodexProfile.ps1 -Action remove -Name codex2 -Force
   .\CodexProfile.ps1 -Action stop -Name codex1
@@ -18,7 +20,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut', 'status', 'verify', 'remove', 'doctor', 'processes')]
+    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut', 'status', 'verify', 'remove', 'doctor', 'processes', 'repair', 'sync-check')]
     [string]$Action,
 
     [string]$Name = 'codex1',
@@ -249,6 +251,30 @@ try {
             else {
                 $procs | Select-Object Pid, Kind, Profile, Executable | Format-Table -AutoSize | Out-String | Write-Output
             }
+        }
+        'repair' {
+            $result = Clear-StaleAuthSwapLock -SourceHome $SourceHome -ParallelRoot $ParallelRoot -Force:$Force
+            if ($AsJson) {
+                $result | ConvertTo-Json -Depth 4
+                break
+            }
+            Write-Output ("Restored main auth: {0}" -f $result.RestoredMain)
+            Write-Output ("Cleared AuthSwap lock: {0}" -f $result.ClearedLock)
+            Write-Output ("Main account now: {0}" -f $result.MainAccount)
+        }
+        'sync-check' {
+            $rows = @(Test-CodexInstallSync -SourceDir $PSScriptRoot -ParallelRoot $ParallelRoot)
+            if ($AsJson) {
+                $rows | ConvertTo-Json -Depth 4
+                break
+            }
+            $rows | Format-Table -AutoSize | Out-String | Write-Output
+            $stale = @($rows | Where-Object { -not $_.InSync })
+            if ($stale.Count -gt 0) {
+                Write-Warning ("{0} file(s) out of sync. Re-run Install-CodexMultiProfile.ps1 or Update-CodexMultiProfile.ps1." -f $stale.Count)
+                exit 3
+            }
+            Write-Output 'sync-check: all packaged scripts match the install.'
         }
     }
 }
