@@ -48,9 +48,12 @@ Shared logic lives in `scripts/CodexMultiProfile.psm1`:
 
 | Script | Role |
 |---|---|
-| `install.ps1` | Download zip + run installer |
-| `Install-CodexMultiProfile.ps1` | Copy launchers, clone app, shortcuts, skill |
+| `install.ps1` | Download zip (branch or tag) + run installer |
+| `Install-CodexMultiProfile.ps1` | Copy packaged scripts, clone app, shortcuts, skill |
 | `Launch-CodexProfile.ps1` | AuthSwap in + start clone |
 | `watch-authswap-restore.ps1` | AuthSwap out on close |
 | `Launch-CodexMain.ps1` | Save secondary if needed, restore main, start Store app |
-| `CodexProfile.ps1` | `new` / `list` / `stop` / `shortcut` / `launch` |
+| `CodexProfile.ps1` | `new` / `launch` / `list` / `status` / `doctor` / `repair` / `sync-check` / `diagnostics` / … |
+| `Export-CodexDiagnostics.ps1` | Redacted support bundle (no `auth.json`) |
+| `Redact-LaunchTrace.ps1` | Scrub emails/home paths from launch-trace.log |
+| `Update-CodexMultiProfile.ps1` | `git pull --ff-only` + reinstall + verify |
