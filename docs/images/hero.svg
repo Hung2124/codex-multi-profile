@@ -1,31 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
-  <title id="title">Codex Multi-Profile</title>
-  <desc id="desc">Two ChatGPT logins, one Windows workspace, AuthSwap in the middle.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img">
+  <title>Codex Multi-Profile</title>
   <rect width="1280" height="640" fill="#0b0d10"/>
   <g stroke="#1b2228" stroke-width="1" fill="none">
     <path d="M0 80 H1280 M0 160 H1280 M0 240 H1280 M0 320 H1280 M0 400 H1280 M0 480 H1280 M0 560 H1280"/>
     <path d="M80 0 V640 M160 0 V640 M240 0 V640 M320 0 V640 M400 0 V640 M480 0 V640 M560 0 V640 M640 0 V640 M720 0 V640 M800 0 V640 M880 0 V640 M960 0 V640 M1040 0 V640 M1120 0 V640 M1200 0 V640"/>
   </g>
   <rect x="48" y="48" width="1184" height="544" fill="none" stroke="#2ee9c5" stroke-opacity="0.35" stroke-width="1.5"/>
-  <text x="80" y="130" fill="#f4f7f6" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="54" font-weight="700">Codex Multi-Profile</text>
-  <text x="80" y="178" fill="#9aa7ab" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="22">Two ChatGPT logins. One Windows workspace.</text>
+  <text x="80" y="130" fill="#f4f7f6" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="700">Codex Multi-Profile</text>
+  <text x="80" y="178" fill="#9aa7ab" font-family="Arial, Helvetica, sans-serif" font-size="22">Two ChatGPT logins. One Windows workspace.</text>
   <g transform="translate(80,240)">
     <rect width="280" height="220" fill="#12161a" stroke="#3a454c" rx="8"/>
-    <text x="24" y="40" fill="#8b969c" font-family="Consolas, monospace" font-size="14" letter-spacing="2">MAIN</text>
-    <text x="24" y="92" fill="#f4f7f6" font-family="Segoe UI, sans-serif" font-size="22">Store Codex</text>
-    <text x="24" y="128" fill="#9aa7ab" font-family="Segoe UI, sans-serif" font-size="14">~\.codex\auth.json</text>
+    <text x="24" y="40" fill="#8b969c" font-family="Consolas, monospace" font-size="14">MAIN</text>
+    <text x="24" y="92" fill="#f4f7f6" font-family="Arial, sans-serif" font-size="22">Store Codex</text>
+    <text x="24" y="128" fill="#9aa7ab" font-family="Arial, sans-serif" font-size="14">~/.codex/auth.json</text>
   </g>
   <g transform="translate(500,310)">
     <rect x="-70" y="-28" width="180" height="56" rx="28" fill="#12161a" stroke="#2ee9c5"/>
-    <text x="20" y="8" text-anchor="middle" fill="#2ee9c5" font-family="Segoe UI, sans-serif" font-size="16" font-weight="600">AuthSwap</text>
+    <text x="20" y="8" text-anchor="middle" fill="#2ee9c5" font-family="Arial, sans-serif" font-size="16" font-weight="600">AuthSwap</text>
     <path d="M-90 0 H-78" stroke="#2ee9c5" stroke-width="2"/>
     <path d="M118 0 H130" stroke="#2ee9c5" stroke-width="2"/>
   </g>
   <g transform="translate(920,240)">
     <rect width="280" height="220" fill="#12161a" stroke="#2ee9c5" rx="8"/>
-    <text x="24" y="40" fill="#2ee9c5" font-family="Consolas, monospace" font-size="14" letter-spacing="2">CODEX1</text>
-    <text x="24" y="92" fill="#f4f7f6" font-family="Segoe UI, sans-serif" font-size="22">Secondary login</text>
-    <text x="24" y="128" fill="#9aa7ab" font-family="Segoe UI, sans-serif" font-size="14">profiles\codex1\auth.json</text>
+    <text x="24" y="40" fill="#2ee9c5" font-family="Consolas, monospace" font-size="14">CODEX1</text>
+    <text x="24" y="92" fill="#f4f7f6" font-family="Arial, sans-serif" font-size="22">Secondary login</text>
+    <text x="24" y="128" fill="#9aa7ab" font-family="Arial, sans-serif" font-size="14">profiles/codex1/auth.json</text>
   </g>
-  <text x="80" y="540" fill="#6b767c" font-family="Segoe UI, sans-serif" font-size="14">Windows · Unofficial · MIT · sessions / skills / MCP stay shared</text>
+  <text x="80" y="540" fill="#6b767c" font-family="Arial, sans-serif" font-size="14">Windows · Unofficial · MIT · sessions / skills / MCP stay shared</text>
 </svg>

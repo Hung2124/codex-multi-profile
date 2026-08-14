@@ -1,14 +1,34 @@
 # Codex Multi-Profile
 
-Hai tài khoản ChatGPT trên **Codex Desktop Windows**. Một workspace dùng chung.
+<p align="center">
+  <strong>Hai tài khoản ChatGPT trên Codex Desktop Windows.<br>Một workspace dùng chung.</strong>
+</p>
 
-`CODEX_HOME` thứ hai thường **không** đổi acc — app vẫn đọc `~\.codex\auth.json`. Repo này **AuthSwap**: lúc mở profile thì chép token acc phụ vào đúng file app đọc, lúc đóng thì restore acc chính.
+<p align="center">
+  <a href="README.md">English</a> ·
+  <a href="docs/recipes.md">Recipes</a> ·
+  <a href="docs/troubleshooting.md">Troubleshooting</a>
+</p>
 
-[English README](README.md)
+<p align="center">
+  <img src="docs/images/hero.png" alt="Codex Multi-Profile — MAIN và CODEX1 qua AuthSwap" width="920">
+</p>
 
-![Hero](docs/images/hero.svg)
+> Không chính thức, không liên kết OpenAI. Cần [Codex Desktop](https://chatgpt.com/codex) từ Microsoft Store.
 
-> Không chính thức, không liên kết OpenAI. Cần Codex Desktop từ Microsoft Store.
+---
+
+## Vấn đề
+
+`CODEX_HOME` thứ hai thường **không** đổi acc — app vẫn đọc `~\.codex\auth.json`.
+
+Repo này dùng **AuthSwap**: lúc mở profile thì chép token acc phụ vào đúng file app đọc; lúc đóng thì restore acc chính. Session / skill / MCP vẫn dùng chung.
+
+<p align="center">
+  <img src="docs/images/flow.png" alt="Luồng AuthSwap" width="920">
+</p>
+
+---
 
 ## Cài
 
@@ -21,17 +41,24 @@ cd codex-multi-profile
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-CodexMultiProfile.ps1
 ```
 
-3. Shortcut **Codex1** = acc phụ (lần đầu sẽ kêu đăng nhập). **Codex Main** = restore acc gốc rồi mở Store Codex.
+3. Shortcut:
+   - **Codex1** — acc phụ (lần đầu sẽ kêu đăng nhập)
+   - **Codex Main** — restore acc gốc rồi mở Store Codex
+   - **Codex Profiles** — list / tạo profile khác
 
-## Cài xong kiểm tra
+Không mở hai cửa sổ cùng lúc.
+
+### Kiểm tra sau khi cài
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action verify
-powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action doctor
-powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action status
+$m = "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action doctor
+powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action status
 ```
 
-`status` / `doctor` che email (ví dụ `al***@gmail.com`). Không mở Codex1 và Codex Main cùng lúc.
+`status` / `doctor` che email (ví dụ `al***@gmail.com`).
+
+---
 
 ## Gỡ
 
@@ -41,8 +68,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Uninstall-CodexMul
 
 Không xóa `~\.codex`.
 
+---
+
 ## Tài liệu
 
 - [Architecture](docs/architecture.md)
 - [Troubleshooting](docs/troubleshooting.md)
+- [FAQ](docs/faq.md)
+- [Recipes](docs/recipes.md)
 - [Changelog](CHANGELOG.md)

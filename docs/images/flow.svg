@@ -1,26 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420" role="img" aria-labelledby="title">
-  <title id="title">AuthSwap flow</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420" role="img">
+  <title>AuthSwap flow</title>
   <rect width="1280" height="420" fill="#0b0d10"/>
-  <g font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <g font-family="Arial, Helvetica, sans-serif">
     <g transform="translate(48,90)">
       <rect width="340" height="160" rx="10" fill="#12161a" stroke="#3a454c"/>
-      <text x="24" y="40" fill="#8b969c" font-size="13" letter-spacing="2">STEP 1</text>
+      <text x="24" y="40" fill="#8b969c" font-size="13">STEP 1</text>
       <text x="24" y="84" fill="#f4f7f6" font-size="22" font-weight="600">Open Codex1</text>
-      <text x="24" y="118" fill="#9aa7ab" font-size="14">Desktop shortcut ’ launcher</text>
+      <text x="24" y="118" fill="#9aa7ab" font-size="14">Desktop shortcut to launcher</text>
     </g>
     <g transform="translate(470,90)">
       <rect width="340" height="160" rx="10" fill="#12161a" stroke="#2ee9c5"/>
-      <text x="24" y="40" fill="#2ee9c5" font-size="13" letter-spacing="2">STEP 2</text>
+      <text x="24" y="40" fill="#2ee9c5" font-size="13">STEP 2</text>
       <text x="24" y="84" fill="#f4f7f6" font-size="22" font-weight="600">Swap auth.json</text>
       <text x="24" y="118" fill="#9aa7ab" font-size="14">Backup main, copy secondary</text>
     </g>
     <g transform="translate(892,90)">
       <rect width="340" height="160" rx="10" fill="#12161a" stroke="#3a454c"/>
-      <text x="24" y="40" fill="#8b969c" font-size="13" letter-spacing="2">STEP 3</text>
-      <text x="24" y="84" fill="#f4f7f6" font-size="22" font-weight="600">Codex shows acc 2</text>
+      <text x="24" y="40" fill="#8b969c" font-size="13">STEP 3</text>
+      <text x="24" y="84" fill="#f4f7f6" font-size="22" font-weight="600">Codex shows account 2</text>
       <text x="24" y="118" fill="#9aa7ab" font-size="14">Cloned ChatGPT.exe + cmd env</text>
     </g>
-    <path d="M388 170 H470" stroke="#2ee9c5" stroke-width="2" marker-end="url(#a)"/>
+    <path d="M388 170 H470" stroke="#2ee9c5" stroke-width="2"/>
     <path d="M810 170 H892" stroke="#2ee9c5" stroke-width="2"/>
     <text x="640" y="340" text-anchor="middle" fill="#9aa7ab" font-size="16">On close: save secondary if it is not main, then restore ~/.codex/auth.json</text>
   </g>
