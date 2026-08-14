@@ -220,6 +220,122 @@ function Get-CodexInstallStatus {
     }
 }
 
+function Test-FileHasUtf8Bom {
+    param([Parameter(Mandatory)] [string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return $false }
+    $bytes = [System.IO.File]::ReadAllBytes($Path)
+    return ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF)
+}
+
+function Get-CodexRunningProcesses {
+    param([string]$ParallelRoot = (Get-CodexParallelRoot))
+    $items = @(Get-CimInstance Win32_Process -Filter "Name='ChatGPT.exe'" -ErrorAction SilentlyContinue)
+    foreach ($p in $items) {
+        $path = [string]$p.ExecutablePath
+        $cmd = [string]$p.CommandLine
+        $kind = 'unknown'
+        if ($path -like '*WindowsApps*OpenAI.Codex*') { $kind = 'store' }
+        elseif ($path -like '*CodexParallelDesktop*' -or $cmd -like '*CodexParallelDesktop*') { $kind = 'clone' }
+        elseif ($cmd -like '*profiles\*') { $kind = 'clone' }
+        $profile = $null
+        if ($cmd -match 'profiles[\\/]([a-z0-9\-]+)') { $profile = $Matches[1] }
+        [pscustomobject]@{
+            Pid         = $p.ProcessId
+            Kind        = $kind
+            Profile     = $profile
+            Executable  = $path
+            CommandLine = $cmd
+        }
+    }
+}
+
+function Invoke-CodexDoctor {
+    <#
+    .SYNOPSIS
+      Health checks for AuthSwap installs. Returns objects with Severity + Message.
+    #>
+    param(
+        [string]$SourceHome = (Join-Path $env:USERPROFILE '.codex'),
+        [string]$ParallelRoot = (Get-CodexParallelRoot)
+    )
+    $findings = New-Object System.Collections.Generic.List[object]
+    function Add-Finding([string]$Severity, [string]$Code, [string]$Message) {
+        $findings.Add([pscustomobject]@{ Severity = $Severity; Code = $Code; Message = $Message })
+    }
+
+    $required = @(
+        'CodexMultiProfile.psm1',
+        'Launch-CodexProfile.ps1',
+        'Launch-CodexMain.ps1',
+        'watch-authswap-restore.ps1',
+        'CodexProfile.ps1'
+    )
+    foreach ($name in $required) {
+        $path = Join-Path $ParallelRoot $name
+        if (-not (Test-Path -LiteralPath $path)) {
+            Add-Finding 'error' 'missing-launcher' "Missing $name under $ParallelRoot. Re-run Install-CodexMultiProfile.ps1."
+        }
+    }
+
+    $clone = $null
+    try { $clone = Get-CodexCloneExe -ParallelRoot $ParallelRoot } catch { $clone = $null }
+    if (-not $clone) {
+        Add-Finding 'error' 'missing-clone' 'ChatGPT.exe clone not found. Install Codex Desktop from the Store, launch once, then reinstall.'
+    }
+    else {
+        Add-Finding 'info' 'clone-ok' "Clone OK: $clone"
+    }
+
+    $mainAuth = Join-Path $SourceHome 'auth.json'
+    $mainEmail = Get-AuthEmailFromFile -Path $mainAuth
+    if ($mainEmail -eq 'MISSING') {
+        Add-Finding 'warn' 'main-auth-missing' "No main auth at $mainAuth. Sign in to Store Codex once."
+    }
+    elseif ($mainEmail -eq 'PARSE_ERR') {
+        Add-Finding 'error' 'main-auth-parse' 'Main auth.json exists but id_token email could not be parsed.'
+    }
+    else {
+        Add-Finding 'info' 'main-auth-ok' ("Main account: " + (Hide-AuthEmail -Email $mainEmail))
+    }
+
+    $lock = Join-Path $ParallelRoot '.authswap-active'
+    $swap = if (Test-Path -LiteralPath $lock) { (Get-Content -LiteralPath $lock -Raw).Trim() } else { '' }
+    $running = @(Get-CodexRunningProcesses -ParallelRoot $ParallelRoot)
+    $cloneRunning = @($running | Where-Object { $_.Kind -eq 'clone' })
+    $storeRunning = @($running | Where-Object { $_.Kind -eq 'store' })
+
+    if ($swap -and $cloneRunning.Count -eq 0) {
+        Add-Finding 'warn' 'stale-swap-lock' "AuthSwap lock is set to '$swap' but no clone process is running. Run Launch-CodexMain.ps1 or clear .authswap-active after restore."
+    }
+    elseif ($swap) {
+        Add-Finding 'info' 'swap-active' "AuthSwap active for profile '$swap'."
+    }
+
+    if ($storeRunning.Count -gt 0 -and $cloneRunning.Count -gt 0) {
+        Add-Finding 'error' 'dual-window' 'Store Codex and a clone are both running. Close one — AuthSwap owns ~/.codex/auth.json for a single process.'
+    }
+
+    $configPath = Join-Path $SourceHome 'config.toml'
+    if ((Test-Path -LiteralPath $configPath) -and (Test-FileHasUtf8Bom -Path $configPath)) {
+        Add-Finding 'warn' 'config-bom' 'config.toml has a UTF-8 BOM. Codex may ignore it. Rewrite with Write-Utf8NoBom.'
+    }
+
+    $profilesRoot = Join-Path $ParallelRoot 'profiles'
+    if (Test-Path -LiteralPath $profilesRoot) {
+        Get-ChildItem $profilesRoot -Directory | ForEach-Object {
+            $email = Get-AuthEmailFromFile -Path (Join-Path $_.FullName 'auth.json')
+            if ($email -ne 'MISSING' -and $mainEmail -ne 'MISSING' -and $email -eq $mainEmail) {
+                Add-Finding 'warn' 'poisoned-profile' ("Profile '$($_.Name)' auth matches main (" + (Hide-AuthEmail -Email $email) + "). Next launch will bootstrap secondary login.")
+            }
+        }
+    }
+
+    if ($findings.Count -eq 0) {
+        Add-Finding 'info' 'healthy' 'No issues found.'
+    }
+    return $findings.ToArray()
+}
+
 Export-ModuleMember -Function @(
     'Get-CodexMultiProfileVersion',
     'Get-CodexParallelRoot',
@@ -228,6 +344,9 @@ Export-ModuleMember -Function @(
     'Get-AuthEmailFromFile',
     'Hide-AuthEmail',
     'Get-CodexInstallStatus',
+    'Test-FileHasUtf8Bom',
+    'Get-CodexRunningProcesses',
+    'Invoke-CodexDoctor',
     'Test-NeedBootstrapLogin',
     'Test-ShouldSaveProfileAuth',
     'Get-CodexCloneExe',
