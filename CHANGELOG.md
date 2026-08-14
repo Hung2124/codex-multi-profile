@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here.
 
+## 0.1.3 — 2026-08-14
+
+### Added
+- `doctor` health checks (stale lock, dual-window, BOM, poisoned profile)
+- `processes` to list Store vs clone ChatGPT.exe
+- `Redact-LaunchTrace.ps1` for safe bug-report logs
+- SUPPORT, recipe cards, contributor invariants
+
+### Changed
+- Bug template asks for doctor output and redacted logs
+
 ## 0.1.2 — 2026-08-13
 
 ### Added
