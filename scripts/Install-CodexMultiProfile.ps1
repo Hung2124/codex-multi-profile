@@ -54,7 +54,8 @@ $files = @(
     'Launch-CodexMain.ps1',
     'watch-authswap-restore.ps1',
     'CodexProfile.ps1',
-    'CodexProfiles-Menu.ps1'
+    'CodexProfiles-Menu.ps1',
+    'Redact-LaunchTrace.ps1'
 )
 foreach ($name in $files) {
     $from = Join-Path $PSScriptRoot $name
