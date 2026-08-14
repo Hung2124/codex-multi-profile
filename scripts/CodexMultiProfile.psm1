@@ -345,6 +345,7 @@ function Get-CodexPackagedScriptNames {
         'CodexProfile.ps1',
         'CodexProfiles-Menu.ps1',
         'Redact-LaunchTrace.ps1',
+        'Export-CodexDiagnostics.ps1',
         'Update-CodexMultiProfile.ps1'
     )
 }
