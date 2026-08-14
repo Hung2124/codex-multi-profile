@@ -336,6 +336,82 @@ function Invoke-CodexDoctor {
     return $findings.ToArray()
 }
 
+function Get-CodexPackagedScriptNames {
+    @(
+        'CodexMultiProfile.psm1',
+        'Launch-CodexProfile.ps1',
+        'Launch-CodexMain.ps1',
+        'watch-authswap-restore.ps1',
+        'CodexProfile.ps1',
+        'CodexProfiles-Menu.ps1',
+        'Redact-LaunchTrace.ps1',
+        'Update-CodexMultiProfile.ps1'
+    )
+}
+
+function Test-CodexInstallSync {
+    <#
+    .SYNOPSIS
+      Compare packaged scripts in the repo (or $SourceDir) with the LocalAppData install.
+    #>
+    param(
+        [Parameter(Mandatory)] [string]$SourceDir,
+        [string]$ParallelRoot = (Get-CodexParallelRoot)
+    )
+    $rows = @()
+    foreach ($name in Get-CodexPackagedScriptNames) {
+        $src = Join-Path $SourceDir $name
+        $dst = Join-Path $ParallelRoot $name
+        $srcOk = Test-Path -LiteralPath $src
+        $dstOk = Test-Path -LiteralPath $dst
+        $match = $false
+        if ($srcOk -and $dstOk) {
+            $a = Get-FileHash -LiteralPath $src -Algorithm SHA256
+            $b = Get-FileHash -LiteralPath $dst -Algorithm SHA256
+            $match = ($a.Hash -eq $b.Hash)
+        }
+        $rows += [pscustomobject]@{
+            Name    = $name
+            InRepo  = $srcOk
+            Installed = $dstOk
+            InSync  = $match
+        }
+    }
+    return $rows
+}
+
+function Clear-StaleAuthSwapLock {
+    <#
+    .SYNOPSIS
+      Restore main auth from backup if present and remove .authswap-active when no clone is running.
+    #>
+    param(
+        [string]$SourceHome = (Join-Path $env:USERPROFILE '.codex'),
+        [string]$ParallelRoot = (Get-CodexParallelRoot),
+        [switch]$Force
+    )
+    $lock = Join-Path $ParallelRoot '.authswap-active'
+    $mainAuth = Join-Path $SourceHome 'auth.json'
+    $mainBak = Join-Path $SourceHome 'auth.json.__main__'
+    $running = @(Get-CodexRunningProcesses -ParallelRoot $ParallelRoot | Where-Object { $_.Kind -eq 'clone' })
+    if ($running.Count -gt 0 -and -not $Force) {
+        throw "Clone still running (pid $($running[0].Pid)). Close Codex1 first, or pass -Force."
+    }
+    $restored = $false
+    if (Test-Path -LiteralPath $mainBak) {
+        Copy-Item -LiteralPath $mainBak -Destination $mainAuth -Force
+        Remove-Item -LiteralPath $mainBak -Force -ErrorAction SilentlyContinue
+        $restored = $true
+    }
+    $hadLock = Test-Path -LiteralPath $lock
+    Remove-Item -LiteralPath $lock -Force -ErrorAction SilentlyContinue
+    [pscustomobject]@{
+        RestoredMain = $restored
+        ClearedLock  = $hadLock
+        MainAccount  = Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $mainAuth)
+    }
+}
+
 Export-ModuleMember -Function @(
     'Get-CodexMultiProfileVersion',
     'Get-CodexParallelRoot',
@@ -347,6 +423,9 @@ Export-ModuleMember -Function @(
     'Test-FileHasUtf8Bom',
     'Get-CodexRunningProcesses',
     'Invoke-CodexDoctor',
+    'Get-CodexPackagedScriptNames',
+    'Test-CodexInstallSync',
+    'Clear-StaleAuthSwapLock',
     'Test-NeedBootstrapLogin',
     'Test-ShouldSaveProfileAuth',
     'Get-CodexCloneExe',
