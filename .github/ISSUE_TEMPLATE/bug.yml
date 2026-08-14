@@ -16,13 +16,25 @@ body:
     validations:
       required: true
   - type: input
+    id: version
+    attributes:
+      label: codex-multi-profile version
+      description: Output of CodexProfile.ps1 -Action status (Version line) or the VERSION file
+      placeholder: 0.1.2
+  - type: input
     id: app
     attributes:
       label: Codex Desktop version
-      placeholder: e.g. Store listing version or folder name under %LOCALAPPDATA%\CodexParallelDesktop\versions
+      placeholder: e.g. folder name under %LOCALAPPDATA%\CodexParallelDesktop\versions
+  - type: textarea
+    id: doctor
+    attributes:
+      label: doctor output
+      description: Run CodexProfile.ps1 -Action doctor and paste here (emails are already masked).
+      render: text
   - type: textarea
     id: log
     attributes:
-      label: launch-trace.log excerpt
-      description: Redact emails. File is at %LOCALAPPDATA%\CodexParallelDesktop\launch-trace.log
+      label: Redacted launch-trace.log
+      description: Prefer scripts/Redact-LaunchTrace.ps1 output. Do not paste auth.json or tokens.
       render: text
