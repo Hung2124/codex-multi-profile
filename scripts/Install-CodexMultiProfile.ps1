@@ -48,15 +48,7 @@ $desktop = [Environment]::GetFolderPath('Desktop')
 
 New-Item -ItemType Directory -Force -Path $ParallelRoot, (Join-Path $ParallelRoot "profiles\$key") | Out-Null
 
-$files = @(
-    'CodexMultiProfile.psm1',
-    'Launch-CodexProfile.ps1',
-    'Launch-CodexMain.ps1',
-    'watch-authswap-restore.ps1',
-    'CodexProfile.ps1',
-    'CodexProfiles-Menu.ps1',
-    'Redact-LaunchTrace.ps1'
-)
+$files = @(Get-CodexPackagedScriptNames)
 foreach ($name in $files) {
     $from = Join-Path $PSScriptRoot $name
     if (-not (Test-Path -LiteralPath $from)) { throw "Missing $from" }
