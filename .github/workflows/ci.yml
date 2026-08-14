@@ -10,6 +10,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Show VERSION
+        shell: powershell
+        run: Get-Content .\VERSION
       - name: Parse and unit tests
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\Run-All.ps1
