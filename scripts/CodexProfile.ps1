@@ -13,6 +13,7 @@
   .\CodexProfile.ps1 -Action processes
   .\CodexProfile.ps1 -Action repair
   .\CodexProfile.ps1 -Action sync-check
+  .\CodexProfile.ps1 -Action diagnostics
   .\CodexProfile.ps1 -Action verify
   .\CodexProfile.ps1 -Action remove -Name codex2 -Force
   .\CodexProfile.ps1 -Action stop -Name codex1
@@ -20,7 +21,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut', 'status', 'verify', 'remove', 'doctor', 'processes', 'repair', 'sync-check')]
+    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut', 'status', 'verify', 'remove', 'doctor', 'processes', 'repair', 'sync-check', 'diagnostics')]
     [string]$Action,
 
     [string]$Name = 'codex1',
@@ -275,6 +276,16 @@ try {
                 exit 3
             }
             Write-Output 'sync-check: all packaged scripts match the install.'
+        }
+        'diagnostics' {
+            $exporter = Join-Path $ParallelRoot 'Export-CodexDiagnostics.ps1'
+            if (-not (Test-Path -LiteralPath $exporter)) {
+                $exporter = Join-Path $PSScriptRoot 'Export-CodexDiagnostics.ps1'
+            }
+            if (-not (Test-Path -LiteralPath $exporter)) {
+                throw 'Export-CodexDiagnostics.ps1 not found. Re-run Install-CodexMultiProfile.ps1.'
+            }
+            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $exporter -ParallelRoot $ParallelRoot -SourceHome $SourceHome
         }
     }
 }
