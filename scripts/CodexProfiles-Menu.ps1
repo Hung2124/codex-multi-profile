@@ -17,7 +17,7 @@ Enter a number or name:
 1 / codex1 = launch secondary profile
 main = restore main account (Store Codex)
 list = list profiles
-status / doctor / verify / processes = diagnostics
+status / doctor / verify / processes / repair / sync-check / diagnostics = tools
 or type a new profile name to create + launch
 "@, 'Codex Profiles', '1')
 
@@ -30,7 +30,9 @@ function Invoke-Profile([string]$Action, [string]$Name) {
 
 switch -Regex ($choice) {
     '^(?i)list$' { Invoke-Profile -Action list -Name '_' }
-    '^(?i)status|verify|doctor|processes$' { Invoke-Profile -Action $choice.ToLowerInvariant() -Name '_' }
+    '^(?i)status|verify|doctor|processes|repair|sync-check|diagnostics$' {
+        Invoke-Profile -Action $choice.ToLowerInvariant() -Name '_'
+    }
     '^(?i)main|goc|home$' {
         $main = Join-Path $root 'Launch-CodexMain.ps1'
         & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $main
