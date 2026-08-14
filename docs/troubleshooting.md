@@ -16,11 +16,15 @@ Default log (emails are masked by the launcher; still prefer the redactor before
 
 `doctor` reports `stale-swap-lock` when `.authswap-active` exists but no clone is running.
 
+Preferred fix:
+
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\Launch-CodexMain.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action repair
 ```
 
-That restores main auth and clears the lock.
+`repair` restores `~\.codex\auth.json` from `auth.json.__main__` (if present) and clears `.authswap-active`. It refuses while a clone is still running unless you pass `-Force`.
+
+Fallback: run `Launch-CodexMain.ps1`, which also restores main auth and clears the lock.
 
 ## Wrong account in the profile window
 
