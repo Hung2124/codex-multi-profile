@@ -58,6 +58,18 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action status
 
 `status` / `doctor` che email (ví dụ `al***@gmail.com`).
 
+Khóa AuthSwap kẹt:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action repair
+```
+
+Gói log an toàn để mở issue:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action diagnostics
+```
+
 ---
 
 ## Gỡ

@@ -42,18 +42,35 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexPara
 
 Emails in that JSON are already masked.
 
+## How do I clear a stale AuthSwap lock?
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action repair
+```
+
+Close every Codex window first. See [recipes/clear-stale-lock.md](recipes/clear-stale-lock.md).
+
 ## How do I check the install?
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action status
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action doctor
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action sync-check
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action verify
 ```
 
 ## How do I make a safe bug-report log?
 
+Prefer a full bundle:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action diagnostics
+```
+
+Or redact only the launch log:
+
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\Redact-LaunchTrace.ps1"
 ```
 
-Paste the `launch-trace.redacted-*.txt` file, not `auth.json`.
+Paste the redacted files, not `auth.json`.

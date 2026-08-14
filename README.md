@@ -98,8 +98,11 @@ $m    = "$root\CodexProfile.ps1"
 | Restore main + Store app | `...\Launch-CodexMain.ps1` |
 | Create `codex2` | `-Action new -Name codex2` |
 | List / status / doctor | `-Action list` · `status` · `doctor` |
+| Repair stale AuthSwap lock | `-Action repair` |
+| Install file sync check | `-Action sync-check` |
 | JSON status | `-Action status -AsJson` |
 | Running processes | `-Action processes` |
+| Diagnostic bundle | `-Action diagnostics` |
 | Verify install | `-Action verify` |
 | Remove a profile | `-Action remove -Name codex2 -Force` |
 | Safe bug-report log | `...\Redact-LaunchTrace.ps1` |
