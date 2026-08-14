@@ -35,6 +35,6 @@ body:
   - type: textarea
     id: log
     attributes:
-      label: Redacted launch-trace.log
-      description: Prefer scripts/Redact-LaunchTrace.ps1 output. Do not paste auth.json or tokens.
+      label: Redacted launch-trace.log or diagnostics bundle
+      description: Prefer CodexProfile.ps1 -Action diagnostics (or Redact-LaunchTrace.ps1). Do not paste auth.json or tokens.
       render: text
