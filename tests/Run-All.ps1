@@ -8,4 +8,5 @@ $root = Split-Path -Parent $PSScriptRoot
 & (Join-Path $root 'tests\StatusAndRemove.Tests.ps1')
 & (Join-Path $root 'tests\Doctor.Tests.ps1')
 & (Join-Path $root 'tests\RedactLaunchTrace.Tests.ps1')
+& (Join-Path $root 'tests\RepairAndSync.Tests.ps1')
 Write-Output 'OK: all tests passed.'
