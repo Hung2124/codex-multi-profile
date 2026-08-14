@@ -9,6 +9,8 @@
   .\CodexProfile.ps1 -Action list
   .\CodexProfile.ps1 -Action status
   .\CodexProfile.ps1 -Action status -AsJson
+  .\CodexProfile.ps1 -Action doctor
+  .\CodexProfile.ps1 -Action processes
   .\CodexProfile.ps1 -Action verify
   .\CodexProfile.ps1 -Action remove -Name codex2 -Force
   .\CodexProfile.ps1 -Action stop -Name codex1
@@ -16,7 +18,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut', 'status', 'verify', 'remove')]
+    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut', 'status', 'verify', 'remove', 'doctor', 'processes')]
     [string]$Action,
 
     [string]$Name = 'codex1',
@@ -220,6 +222,33 @@ try {
             $lnk = Join-Path $desktop ("{0}.lnk" -f $record.DisplayName)
             Remove-Item -LiteralPath $lnk -Force -ErrorAction SilentlyContinue
             Write-Output "Removed profile $($record.Key)"
+        }
+        'doctor' {
+            $findings = @(Invoke-CodexDoctor -SourceHome $SourceHome -ParallelRoot $ParallelRoot)
+            if ($AsJson) {
+                $findings | ConvertTo-Json -Depth 6
+                break
+            }
+            $errors = @($findings | Where-Object { $_.Severity -eq 'error' }).Count
+            $warns = @($findings | Where-Object { $_.Severity -eq 'warn' }).Count
+            foreach ($f in $findings) {
+                Write-Output ("[{0}] {1}: {2}" -f $f.Severity.ToUpperInvariant(), $f.Code, $f.Message)
+            }
+            Write-Output ("doctor summary: {0} error(s), {1} warning(s)" -f $errors, $warns)
+            if ($errors -gt 0) { exit 2 }
+        }
+        'processes' {
+            $procs = @(Get-CodexRunningProcesses -ParallelRoot $ParallelRoot)
+            if ($AsJson) {
+                $procs | ConvertTo-Json -Depth 5
+                break
+            }
+            if ($procs.Count -eq 0) {
+                Write-Output 'No ChatGPT.exe processes found.'
+            }
+            else {
+                $procs | Select-Object Pid, Kind, Profile, Executable | Format-Table -AutoSize | Out-String | Write-Output
+            }
         }
     }
 }
