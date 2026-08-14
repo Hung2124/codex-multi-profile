@@ -305,7 +305,7 @@ function Invoke-CodexDoctor {
     $storeRunning = @($running | Where-Object { $_.Kind -eq 'store' })
 
     if ($swap -and $cloneRunning.Count -eq 0) {
-        Add-Finding 'warn' 'stale-swap-lock' "AuthSwap lock is set to '$swap' but no clone process is running. Run Launch-CodexMain.ps1 or clear .authswap-active after restore."
+        Add-Finding 'warn' 'stale-swap-lock' "AuthSwap lock is set to '$swap' but no clone process is running. Run: CodexProfile.ps1 -Action repair"
     }
     elseif ($swap) {
         Add-Finding 'info' 'swap-active' "AuthSwap active for profile '$swap'."
