@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented here.
 
+## 0.1.4 — 2026-08-14
+
+### Added
+- `repair` clears a stale AuthSwap lock and restores main auth from backup
+- `sync-check` SHA256-compares packaged scripts vs LocalAppData install
+- `diagnostics` / `Export-CodexDiagnostics.ps1` for redacted support bundles
+- `install.ps1` tag/`vX.Y.Z` Ref support and temp cleanup
+- Recipe cards for stale lock + diagnostics; CODEOWNERS; SUPPORT.md
+
+### Changed
+- Installer copies every name from `Get-CodexPackagedScriptNames`
+- Menu, FAQ, SKILL, and doctor hint point at `repair` / `diagnostics`
+
 ## 0.1.3 — 2026-08-14
 
 ### Added
