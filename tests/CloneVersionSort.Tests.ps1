@@ -14,8 +14,10 @@ New-Item -ItemType File -Force -Path `
 try {
     $exe = Get-CodexCloneExe -ParallelRoot $tmp
     $expected = Join-Path $newer 'ChatGPT.exe'
-    if ($exe -ne $expected) {
-        throw "Expected newest clone $expected but got $exe"
+    $exeFull = [System.IO.Path]::GetFullPath($exe)
+    $expectedFull = [System.IO.Path]::GetFullPath($expected)
+    if ($exeFull -ne $expectedFull) {
+        throw "Expected newest clone $expectedFull but got $exeFull"
     }
 }
 finally {
