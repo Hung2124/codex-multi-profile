@@ -10,7 +10,7 @@ description: >-
 
 # Codex Multi-Profile (Windows)
 
-Unofficial helper for **Codex Desktop on Windows** when you need more than one ChatGPT login and still want one shared workspace.
+Unofficial helper for **Codex Desktop on Windows** when you need more than one **authorized** ChatGPT login and still want one shared workspace. Not for account sharing, quota bypass, or Terms-of-Use violations.
 
 ## Default: ShareLive + AuthSwap
 

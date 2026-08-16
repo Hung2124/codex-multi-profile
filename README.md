@@ -24,6 +24,19 @@
 
 > Unofficial helper. Not affiliated with OpenAI. Needs [Codex Desktop](https://chatgpt.com/codex) from the Microsoft Store.
 
+## Purpose & acceptable use
+
+This repository is a **local, open-source utility** for Windows developers who already hold **multiple authorized ChatGPT accounts** (for example personal and work) and need to switch between them in Codex Desktop while keeping one shared workspace.
+
+It is **not** intended for:
+
+- sharing one paid subscription across people or machines
+- bypassing rate limits, quotas, or billing
+- automating sign-in, scraping, or unofficial API access
+- any use that violates [OpenAI's Terms of Use](https://openai.com/policies/terms-of-use)
+
+Use only accounts you own or are explicitly allowed to use. Changes that enable abuse are out of scope ([CONTRIBUTING.md](CONTRIBUTING.md)).
+
 ---
 
 ## The problem

@@ -16,6 +16,19 @@
 
 > Không chính thức, không liên kết OpenAI. Cần [Codex Desktop](https://chatgpt.com/codex) từ Microsoft Store.
 
+## Mục đích & sử dụng hợp lệ
+
+Repo này là **công cụ mã nguồn mở, chạy local trên Windows** dành cho developer đã có **nhiều tài khoản ChatGPT hợp lệ** (ví dụ cá nhân và công ty) và cần chuyển qua lại giữa các tài khoản trong Codex Desktop, vẫn giữ chung workspace.
+
+Repo **không** nhắm tới:
+
+- chia sẻ một gói trả phí cho nhiều người hoặc nhiều máy
+- vượt quota, rate limit hoặc tránh thanh toán
+- tự động đăng nhập, scrape, hoặc API không chính thức
+- bất kỳ hành vi nào trái [Điều khoản OpenAI](https://openai.com/policies/terms-of-use)
+
+Chỉ dùng tài khoản bạn sở hữu hoặc được phép dùng. PR hướng tới lạm dụng nằm ngoài phạm vi ([CONTRIBUTING.md](CONTRIBUTING.md)).
+
 ---
 
 ## Vấn đề
