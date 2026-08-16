@@ -29,29 +29,41 @@ if (-not $OutDir) {
 }
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
+function Write-RedactedJson {
+    param(
+        [Parameter(Mandatory)] $Data,
+        [Parameter(Mandatory)] [string]$Path,
+        [int]$Depth = 5
+    )
+    $raw = $Data | ConvertTo-Json -Depth $Depth
+    if ([string]::IsNullOrWhiteSpace($raw)) {
+        $raw = if ($Data -is [System.Array]) { '[]' } else { '{}' }
+    }
+    $json = ConvertTo-CodexRedactedText -Text $raw -ParallelRoot $ParallelRoot -SourceHome $SourceHome
+    Write-Utf8NoBom -Path $Path -Text $json
+}
+
 $meta = [ordered]@{
     ExportedAt = (Get-Date).ToString('o')
     Version    = Get-CodexMultiProfileVersion
-    Machine    = $env:COMPUTERNAME
-    User       = $env:USERNAME
     OsVersion  = [Environment]::OSVersion.VersionString
     PsVersion  = $PSVersionTable.PSVersion.ToString()
-    Note       = 'Emails and home paths are masked. auth.json is never included.'
+    Note       = 'Emails, usernames, machine names, and local paths are masked. auth.json is never included.'
 }
-$meta | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $OutDir 'meta.json') -Encoding UTF8
+Write-RedactedJson -Data $meta -Path (Join-Path $OutDir 'meta.json') -Depth 4
 
 $status = Get-CodexInstallStatus -SourceHome $SourceHome -ParallelRoot $ParallelRoot
-$status | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $OutDir 'status.json') -Encoding UTF8
+Write-RedactedJson -Data $status -Path (Join-Path $OutDir 'status.json') -Depth 6
 
 $doctor = @(Invoke-CodexDoctor -SourceHome $SourceHome -ParallelRoot $ParallelRoot)
-$doctor | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $OutDir 'doctor.json') -Encoding UTF8
+Write-RedactedJson -Data $doctor -Path (Join-Path $OutDir 'doctor.json') -Depth 5
 
 $procs = @(Get-CodexRunningProcesses -ParallelRoot $ParallelRoot)
-$procs | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $OutDir 'processes.json') -Encoding UTF8
+Write-RedactedJson -Data $procs -Path (Join-Path $OutDir 'processes.json') -Depth 5
 
 $scriptSrc = $PSScriptRoot
 $sync = @(Test-CodexInstallSync -SourceDir $scriptSrc -ParallelRoot $ParallelRoot)
-$sync | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $OutDir 'sync-check.json') -Encoding UTF8
+Write-RedactedJson -Data $sync -Path (Join-Path $OutDir 'sync-check.json') -Depth 4
 
 $log = Join-Path $ParallelRoot 'launch-trace.log'
 if (Test-Path -LiteralPath $log) {
@@ -69,7 +81,7 @@ $readme = @"
 Codex Multi-Profile diagnostic bundle
 =====================================
 Paste these JSON files into a GitHub issue after a quick review.
-auth.json and tokens are never included.
+Usernames, machine names, emails, and local paths are masked. auth.json and tokens are never included.
 
 Suggested attach order: meta.json, doctor.json, status.json, sync-check.json, launch-trace.redacted.txt
 "@

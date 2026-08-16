@@ -29,4 +29,17 @@ if ($txt -match 'alice@secret\.example') { throw 'email leaked into diagnostics'
 if ($txt -like "*$env:USERPROFILE*") { throw 'home path leaked into diagnostics' }
 if (Get-ChildItem -LiteralPath $out -Recurse -Filter 'auth.json') { throw 'auth.json must never be exported' }
 
+$meta = Get-Content -LiteralPath (Join-Path $out 'meta.json') -Raw | ConvertFrom-Json
+if ($meta.PSObject.Properties.Name -contains 'User') { throw 'meta.json must not include User' }
+if ($meta.PSObject.Properties.Name -contains 'Machine') { throw 'meta.json must not include Machine' }
+
+$bundleText = Get-ChildItem -LiteralPath $out -Recurse -File |
+    ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw } |
+    Out-String
+foreach ($needle in @($env:USERNAME, $env:COMPUTERNAME, $env:USERPROFILE, $sourceHome, $root)) {
+    if ($needle -and $bundleText -like "*$needle*") {
+        throw "diagnostics bundle leaked local value: $needle"
+    }
+}
+
 Write-Output 'OK: diagnostics bundle redacts secrets.'

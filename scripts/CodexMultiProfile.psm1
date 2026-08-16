@@ -113,8 +113,14 @@ function Get-CodexCloneExe {
     $versionsRoot = Join-Path $ParallelRoot 'versions'
     if (-not $ForceRefresh -and (Test-Path -LiteralPath $versionsRoot)) {
         $existing = Get-ChildItem -LiteralPath $versionsRoot -Directory -ErrorAction SilentlyContinue |
-            Sort-Object Name -Descending |
-            ForEach-Object { Join-Path $_.FullName 'app\ChatGPT.exe' } |
+            ForEach-Object {
+                $ver = $null
+                if ([version]::TryParse($_.Name, [ref]$ver)) {
+                    [pscustomobject]@{ Version = $ver; Dir = $_ }
+                }
+            } |
+            Sort-Object Version -Descending |
+            ForEach-Object { Join-Path $_.Dir.FullName 'app\ChatGPT.exe' } |
             Where-Object { Test-Path -LiteralPath $_ } |
             Select-Object -First 1
         if ($existing) { return [string]$existing }
@@ -183,6 +189,31 @@ function Hide-AuthEmail {
     $keep = [Math]::Min(2, $user.Length)
     $shown = $user.Substring(0, $keep) + '***'
     return "$shown@$domain"
+}
+
+function ConvertTo-CodexRedactedText {
+    <#
+    .SYNOPSIS
+      Scrub local identity and paths from text safe to paste publicly.
+    #>
+    param(
+        [Parameter(Mandatory)] [string]$Text,
+        [string]$ParallelRoot,
+        [string]$SourceHome
+    )
+    if ([string]::IsNullOrEmpty($Text)) { return $Text }
+    foreach ($pair in @(
+            @{ Value = $ParallelRoot; Token = '%CODEX_PARALLEL_ROOT%' }
+            @{ Value = $SourceHome; Token = '%CODEX_HOME%' }
+            @{ Value = $env:LOCALAPPDATA; Token = '%LOCALAPPDATA%' }
+            @{ Value = $env:USERPROFILE; Token = '%USERPROFILE%' }
+            @{ Value = $env:COMPUTERNAME; Token = '%COMPUTERNAME%' }
+            @{ Value = $env:USERNAME; Token = '%USERNAME%' }
+        )) {
+        if ([string]::IsNullOrWhiteSpace($pair.Value)) { continue }
+        $Text = [regex]::Replace($Text, [regex]::Escape($pair.Value), $pair.Token, 'IgnoreCase')
+    }
+    return $Text
 }
 
 function Get-CodexInstallStatus {
@@ -420,6 +451,7 @@ Export-ModuleMember -Function @(
     'Write-Utf8NoBom',
     'Get-AuthEmailFromFile',
     'Hide-AuthEmail',
+    'ConvertTo-CodexRedactedText',
     'Get-CodexInstallStatus',
     'Test-FileHasUtf8Bom',
     'Get-CodexRunningProcesses',

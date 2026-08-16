@@ -35,13 +35,15 @@ $text = [regex]::Replace($text, '[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,
     return 'u***@redacted.example'
 })
 
-# Hide LocalAppData first (it usually nests under USERPROFILE)
-$ladEsc = [regex]::Escape($env:LOCALAPPDATA)
-$text = [regex]::Replace($text, $ladEsc, '%LOCALAPPDATA%', 'IgnoreCase')
-
-# Hide the user's profile path
-$homeEsc = [regex]::Escape($env:USERPROFILE)
-$text = [regex]::Replace($text, $homeEsc, '%USERPROFILE%', 'IgnoreCase')
+if (Get-Command ConvertTo-CodexRedactedText -ErrorAction SilentlyContinue) {
+    $text = ConvertTo-CodexRedactedText -Text $text
+}
+else {
+    $ladEsc = [regex]::Escape($env:LOCALAPPDATA)
+    $text = [regex]::Replace($text, $ladEsc, '%LOCALAPPDATA%', 'IgnoreCase')
+    $homeEsc = [regex]::Escape($env:USERPROFILE)
+    $text = [regex]::Replace($text, $homeEsc, '%USERPROFILE%', 'IgnoreCase')
+}
 
 if (-not $OutFile) {
     $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
