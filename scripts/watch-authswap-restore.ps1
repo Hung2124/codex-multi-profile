@@ -7,7 +7,8 @@ param(
     [string]$MainAuth,
     [string]$MainAuthBak,
     [string]$SwapLock,
-    [string]$LogPath
+    [string]$LogPath,
+    [int]$InitialSleepSeconds = 8
 )
 
 $ErrorActionPreference = 'Continue'
@@ -37,7 +38,7 @@ function Get-MaskedEmailFallback([string]$Path) {
     return $email
 }
 
-Start-Sleep -Seconds 8
+if ($InitialSleepSeconds -gt 0) { Start-Sleep -Seconds $InitialSleepSeconds }
 while ($true) {
     $running = @(Get-CimInstance Win32_Process -Filter "Name='ChatGPT.exe'" -ErrorAction SilentlyContinue |
         Where-Object { $_.ExecutablePath -like '*CodexParallelDesktop*' -or $_.CommandLine -like "*profiles\$ProfileKey*" })
