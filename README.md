@@ -33,6 +33,12 @@ One command. It downloads this repo and runs the Windows installer (AuthSwap + s
 irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.ps1 | iex
 ```
 
+Until 0.2.0 is merged, that `main` URL still installs 0.1.4. Use the PR branch:
+
+```powershell
+irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/feature/v0.2.0-layer-router-models/install.ps1 | iex
+```
+
 That is the Windows counterpart of [b-nnett/codex-subscription-router](https://github.com/b-nnett/codex-subscription-router#install) `curl | bash` -- **without** patching ChatGPT.exe or unpacking `app.asar`.
 
 1. Install Codex Desktop and sign in once (**main** account) if you have not already.
@@ -162,7 +168,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\Run-All.ps1
 ### Optional extras (off by default)
 
 - **Layer** -- badge, wider transcript, keep details open on the **cloned** ChatGPT.exe only. [docs/layer.md](docs/layer.md)
-- **ChatGPT Web models** -- write `~\.codex\config.toml` (UTF-8, no BOM) with `chatgpt-web/luna|light|medium|high|xhigh|pro` pointing at a local bridge. This repo does **not** log you into chatgpt.com; use a separate launcher such as [miuuyy/codex-chatgpt-web](https://github.com/miuuyy/codex-chatgpt-web).
+- **ChatGPT Web models** -- write `~\.codex\config.toml` (UTF-8, no BOM) with `chatgpt-web/luna|light|medium|high|xhigh|pro` pointing at a local Responses bridge you already run on `127.0.0.1` (default `http://127.0.0.1:1455/v1`). This repo does **not** log you into chatgpt.com and does not ship or name a companion scraper.
 
 ---
 
