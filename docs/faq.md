@@ -74,3 +74,21 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexPara
 ```
 
 Paste the redacted files, not `auth.json`.
+
+## How do I pick a profile for this repo (router)?
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action pool
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action stick -Name codex1
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action route
+```
+
+Close any open Codex window first. See [router.md](router.md).
+
+## Does route open two Codex windows?
+
+No. AuthSwap is one `~/.codex/auth.json`. If a window is already open, `route` prints the choice and stops.
+
+## Is this a quota bypass?
+
+No. You mark **your** profile `depleted`. The router only chooses among accounts you already set up.
