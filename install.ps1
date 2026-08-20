@@ -12,12 +12,15 @@
 [CmdletBinding()]
 param(
     [string]$Repo = 'Hung2124/codex-multi-profile',
-    [string]$Ref = 'main',
+    [string]$Ref = 'feature/windows-codex-accounts-app',
     [string]$Name = 'codex1',
     [switch]$KeepDownload
 )
 
 $ErrorActionPreference = 'Stop'
+if (-not $PSBoundParameters.ContainsKey('Ref') -and $env:CODEX_MP_REF) {
+    $Ref = $env:CODEX_MP_REF
+}
 $tmp = Join-Path $env:TEMP ("codex-multi-profile-" + [guid]::NewGuid().ToString('n'))
 New-Item -ItemType Directory -Force -Path $tmp | Out-Null
 
@@ -48,12 +51,8 @@ try {
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installer -Name $Name
 
     Write-Host ""
-    Write-Host "Router (opt-in, one Codex window via AuthSwap):"
-    Write-Host "  CodexProfile.ps1 -Action pool"
-    Write-Host "  CodexProfile.ps1 -Action stick -Name codex1"
-    Write-Host "  CodexProfile.ps1 -Action route"
-    Write-Host "  CodexProfile.ps1 -Action depleted -Name codex1"
-    Write-Host "Docs: docs/router.md"
+    Write-Host "Desktop: Codex Accounts (pick a login). One Codex window."
+    Write-Host "Router CLI (agents): pool / stick / route / depleted - docs/router.md"
 }
 
 finally {
