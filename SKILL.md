@@ -46,7 +46,7 @@ The Desktop app-server sometimes **ignores** `CODEX_HOME` and reads `~\.codex\au
 | Shared module | `CodexMultiProfile.psm1` |
 | Profile launcher | `Launch-CodexProfile.ps1` |
 | Restore main | `Launch-CodexMain.ps1` |
-| Manager | `CodexProfile.ps1` (`new`, `list`, `stop`, `shortcut`, `launch`) |
+| Manager | `CodexProfile.ps1` (`new`, `list`, `status`, `doctor`, `pool`, `stick`, `route`, `depleted`, `layer`, `models`, …) |
 | Profiles | `...\profiles\<name>\` |
 | Clone | `...\versions\<ver>\app\ChatGPT.exe` |
 | Shared home | `%USERPROFILE%\.codex` |
@@ -75,6 +75,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Ac
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action verify
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action stop -Name codex1
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action remove -Name codex2 -Force
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action pool
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action stick -Name codex1
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action route
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action depleted -Name codex1
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action layer
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action models
 ```
 
 ## Agent workflow
@@ -111,7 +117,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Ac
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action models -Disable
 ```
 
-Layer targets the cloned ChatGPT.exe only. Models only write `config.toml` (no BOM); this repo does not log into chatgpt.com.
+Layer targets the cloned ChatGPT.exe only. Models only write `config.toml` (no BOM) for a local Responses bridge on 127.0.0.1. This repo does not log into chatgpt.com and does not name a companion app.
 
 ## Poisoned profile auth
 
