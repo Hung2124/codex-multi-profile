@@ -194,7 +194,7 @@ try {
             Write-Output "Root: $($info.Root)"
             Write-Output "Shared home: $($info.SharedHome)"
             Write-Output "AuthSwap active: $(if ($info.SwapActive) { $info.SwapActive } else { '(none)' })"
-            Write-Output "Clone: $(if ($info.CloneExe) { $info.CloneExe } else { '(missing — install Codex Desktop)' })"
+            Write-Output "Clone: $(if ($info.CloneExe) { $info.CloneExe } else { '(missing - install Codex Desktop)' })"
             Write-Output "Main account: $($info.MainAccount)"
             Write-Output "Main backup: $($info.MainBackup)"
             if ($info.Profiles.Count -eq 0) {

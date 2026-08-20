@@ -348,7 +348,7 @@ function Invoke-CodexDoctor {
     }
 
     if ($storeRunning.Count -gt 0 -and $cloneRunning.Count -gt 0) {
-        Add-Finding 'error' 'dual-window' 'Store Codex and a clone are both running. Close one — AuthSwap owns ~/.codex/auth.json for a single process.'
+        Add-Finding 'error' 'dual-window' 'Store Codex and a clone are both running. Close one - AuthSwap owns ~/.codex/auth.json for a single process.'
     }
 
     $configPath = Join-Path $SourceHome 'config.toml'

@@ -1,5 +1,5 @@
 #Requires -Version 5.1
-# AuthSwap close watcher — never overwrite profile auth with the main account.
+# AuthSwap close watcher - never overwrite profile auth with the main account.
 param(
     [string]$ProfileKey,
     [string]$SourceHome,
@@ -69,7 +69,7 @@ if ($shouldSave -and (Test-Path -LiteralPath $MainAuth)) {
     Write-WatchLog "saved profile auth -> $(Get-MaskedEmailFallback $MainAuth)"
 }
 else {
-    Write-WatchLog "SKIP save profile (active looks like main or invalid) — keep prev=$(Get-MaskedEmailFallback $ProfileAuth)"
+    Write-WatchLog "SKIP save profile (active looks like main or invalid) - keep prev=$(Get-MaskedEmailFallback $ProfileAuth)"
 }
 
 if (Test-Path -LiteralPath $MainAuthBak) {

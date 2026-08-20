@@ -115,7 +115,7 @@ if (-not $SkipShortcuts) {
     New-Lnk -ShortcutPath (Join-Path $desktop 'Codex Main.lnk') -VbsPath $vbsMain -WorkingDirectory $ParallelRoot `
         -Description 'Restore main ChatGPT account and open Store Codex' -IconPath $iconPath
     New-Lnk -ShortcutPath (Join-Path $desktop 'Codex Accounts.lnk') -VbsPath $vbsAccounts -WorkingDirectory $ParallelRoot `
-        -Description 'Codex Accounts — pick a ChatGPT login (one window)' -IconPath $iconPath
+        -Description 'Codex Accounts - pick a ChatGPT login (one window)' -IconPath $iconPath
     New-Lnk -ShortcutPath (Join-Path $desktop 'Codex Profiles.lnk') -VbsPath $vbsMenu -WorkingDirectory $ParallelRoot `
         -Description 'Pick or create a Codex profile' -IconPath $iconPath
 }
@@ -147,4 +147,4 @@ Write-Output "Open Desktop shortcut 'Codex Accounts' to see and pick logins."
 Write-Output "Open '$key' for the secondary account, or 'Codex Main' for the Store app."
 Write-Output "Do not run both Codex windows at the same time."
 Write-Output "Check with: CodexProfile.ps1 -Action verify"
-Write-Output "Agents: pool / stick / route / depleted — see docs/router.md"
+Write-Output "Agents: pool / stick / route / depleted - see docs/router.md"

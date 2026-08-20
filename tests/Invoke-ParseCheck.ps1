@@ -4,7 +4,7 @@ $root = Split-Path -Parent $PSScriptRoot
 $failed = @()
 
 $files = @()
-$files += Get-ChildItem -LiteralPath (Join-Path $root 'scripts') -Include '*.ps1', '*.psm1' -File -Recurse
+$files += Get-ChildItem -LiteralPath (Join-Path $root 'scripts') -File -Recurse | Where-Object { $_.Extension -in '.ps1', '.psm1' }
 $files += Get-ChildItem -LiteralPath (Join-Path $root 'tests') -Filter '*.ps1' -File
 $files += Get-Item -LiteralPath (Join-Path $root 'install.ps1') -ErrorAction SilentlyContinue
 

@@ -1,13 +1,13 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Codex Accounts — Windows desktop picker for multiple authorized ChatGPT logins.
+  Codex Accounts - Windows desktop picker for multiple authorized ChatGPT logins.
 
 .DESCRIPTION
   Standalone WPF app (PowerShell 5.1, no extra SDK). Lists AuthSwap profiles as
   selectable cards: name, masked email, last-used, depleted badge, sticky paths.
-  Click / Enter launches via Launch-CodexProfile.ps1. If a Codex window is already
-  open, shows the one-window message and does not start a second UI.
+  Click / Enter closes any open Codex window, then AuthSwap-launches that
+  saved profile (-FastSwitch). No second UI is left running.
 
   Device-code / chatgpt.com login is NOT implemented here. First-run still uses
   the existing AuthSwap bootstrap inside Codex.
@@ -90,7 +90,7 @@ function Format-StickyPaths {
         }
         catch { $s }
     }
-    return ($short -join '  ·  ')
+    return ($short -join ' - ')
 }
 
 function Get-CodexAccountAppRows {
@@ -144,28 +144,12 @@ function Get-CodexAccountAppRows {
             Depleted           = $depleted
             DepletedVisibility = $depletedVis
             StickyText         = $sticky
-            Subtitle           = ($subBits -join '   ·   ')
+            Subtitle           = ($subBits -join '  -  ')
             HasAuth            = $hasAuth
             NeedsLogin         = $needsLogin
         }
     }
     return @($view)
-}
-
-function Test-CodexAccountWindowOpen {
-    param([string]$ParallelRoot = $script:Root)
-    if (-not (Get-Command Get-CodexRunningProcesses -ErrorAction SilentlyContinue)) {
-        return $false
-    }
-    try {
-        $running = @(Get-CodexRunningProcesses -ParallelRoot $ParallelRoot | Where-Object {
-                $_.Kind -eq 'clone' -or $_.Kind -eq 'store'
-            })
-        return ($running.Count -gt 0)
-    }
-    catch {
-        return $false
-    }
 }
 
 function Get-LauncherPath {
@@ -203,7 +187,7 @@ function Start-CodexAccountProfile {
     return [pscustomobject]@{
         Ok      = $true
         Blocked = $false
-        Message = ("Switching to {0}…" -f $key)
+        Message = ("Switching to {0}..." -f $key)
     }
 }
 
@@ -223,7 +207,7 @@ function Start-CodexAccountMain {
     return [pscustomobject]@{
         Ok      = $true
         Blocked = $false
-        Message = 'Opening Main…'
+        Message = 'Opening Main...'
     }
 }
 
@@ -407,7 +391,7 @@ $xaml = @'
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
-      <TextBlock x:Name="EmptyHint" Text="No profiles yet. Add one — first open signs in inside Codex."
+      <TextBlock x:Name="EmptyHint" Text="No profiles yet. Add one - first open signs in inside Codex."
                  Foreground="#6B7380" FontSize="13" TextWrapping="Wrap"
                  HorizontalAlignment="Center" VerticalAlignment="Center"
                  Visibility="Collapsed" Margin="24"/>
@@ -581,7 +565,7 @@ $addBtn.Add_Click({
         $name = Show-AddAccountDialog -Owner $window
         if ([string]::IsNullOrWhiteSpace($name)) { return }
         try {
-            Set-Status 'Creating profile…'
+            Set-Status 'Creating profile...'
             $key = New-CodexAccountProfile -Name $name -ParallelRoot $script:Root
             Refresh-AccountList -KeepName $key
             Set-Status ("Created {0}. Open it to sign in inside Codex (AuthSwap bootstrap)." -f $key)

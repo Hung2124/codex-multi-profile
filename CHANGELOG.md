@@ -5,7 +5,7 @@ All notable changes to this project are documented here.
 ## 0.2.0 — 2026-08-20
 
 ### Added
-- **Codex Accounts** desktop app (`Show-CodexAccountApp.ps1`): WPF account picker (masked email, last-used, depleted, sticky). Click / Enter launches AuthSwap; one-window message if Codex is already open
+- **Codex Accounts** desktop app (`Show-CodexAccountApp.ps1`): WPF account picker (masked email, last-used, depleted, sticky). Click / Enter closes the open Codex window then AuthSwap-launches the saved account
 - Desktop shortcut **Codex Accounts** next to Codex1 / Codex Main
 - One-command Windows install stays `irm .../install.ps1 | iex` (counterpart of b-nnett/codex-subscription-router curl|bash)
 - Subscription router (AuthSwap, one window): `pool`, `stick`, `route`, `depleted` on CodexProfile.ps1

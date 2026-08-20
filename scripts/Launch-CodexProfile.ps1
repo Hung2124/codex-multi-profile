@@ -82,7 +82,7 @@ try {
         $needBootstrap = $true
     }
     if (-not $needBootstrap -and (Test-Path -LiteralPath $profileAuth)) {
-        Write-LaunchLog 'saved profile auth present and not poisoned — no password prompt'
+        Write-LaunchLog 'saved profile auth present and not poisoned - no password prompt'
     }
 
     if (-not $needBootstrap) {
@@ -137,8 +137,8 @@ try {
         try {
             Add-Type -AssemblyName System.Windows.Forms
             [System.Windows.Forms.MessageBox]::Show(
-                "Sign in with the SECONDARY ChatGPT account (not the main one).`n`nAfter login, CLOSE this Codex window — auth is saved for next launch.`n`nDo not open Codex Main while this login is in progress.",
-                'Codex profile — secondary account login',
+                "Sign in with the SECONDARY ChatGPT account (not the main one).`n`nAfter login, CLOSE this Codex window - auth is saved for next launch.`n`nDo not open Codex Main while this login is in progress.",
+                'Codex profile - secondary account login',
                 'OK',
                 'Information'
             ) | Out-Null
@@ -209,7 +209,7 @@ try {
     Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList $watchArgs | Out-Null
 
     Write-LaunchLog 'DONE ok authswap'
-    $msg = if ($needBootstrap) { 'BOOTSTRAP login — sign in with the secondary account, then close the app' } else { "AuthSwap activeAuth=$(Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $mainAuth))" }
+    $msg = if ($needBootstrap) { 'BOOTSTRAP login - sign in with the secondary account, then close the app' } else { "AuthSwap activeAuth=$(Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $mainAuth))" }
     Write-Output "Launched $key $msg pid=$($proc.ProcessId)"
 }
 catch {
