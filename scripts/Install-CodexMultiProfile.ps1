@@ -78,6 +78,7 @@ if (-not $SkipClone) {
 $launchProfile = Join-Path $ParallelRoot 'Launch-CodexProfile.ps1'
 $launchMain = Join-Path $ParallelRoot 'Launch-CodexMain.ps1'
 $menu = Join-Path $ParallelRoot 'CodexProfiles-Menu.ps1'
+$accounts = Join-Path $ParallelRoot 'Show-CodexAccountApp.ps1'
 
 function New-VbsLauncher([string]$CmdLine, [int]$WindowStyle) {
     @(
@@ -99,6 +100,10 @@ $vbsMenu = Join-Path $ParallelRoot 'CodexProfiles-Menu.vbs'
 $cmdMenu = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File ""{0}""' -f $menu
 Write-Utf8NoBom -Path $vbsMenu -Text (New-VbsLauncher -CmdLine $cmdMenu -WindowStyle 1)
 
+$vbsAccounts = Join-Path $ParallelRoot 'CodexAccounts.vbs'
+$cmdAccounts = 'powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{0}""' -f $accounts
+Write-Utf8NoBom -Path $vbsAccounts -Text (New-VbsLauncher -CmdLine $cmdAccounts -WindowStyle 0)
+
 if (-not $SkipShortcuts) {
     $icon = Get-ChildItem (Join-Path $ParallelRoot 'versions') -Recurse -Filter 'icon-chatgpt.ico' -ErrorAction SilentlyContinue |
         Sort-Object FullName -Descending | Select-Object -First 1
@@ -109,8 +114,10 @@ if (-not $SkipShortcuts) {
         -Description "$display - shared Codex data, separate ChatGPT login (AuthSwap)" -IconPath $iconPath
     New-Lnk -ShortcutPath (Join-Path $desktop 'Codex Main.lnk') -VbsPath $vbsMain -WorkingDirectory $ParallelRoot `
         -Description 'Restore main ChatGPT account and open Store Codex' -IconPath $iconPath
-    New-Lnk -ShortcutPath (Join-Path $desktop 'Codex Profiles.lnk') -VbsPath $vbsMenu -WorkingDirectory $ParallelRoot `
-        -Description 'Pick or create a Codex profile' -IconPath $iconPath
+    New-Lnk -ShortcutPath (Join-Path $desktop 'Codex Accounts.lnk') -VbsPath $vbsAccounts -WorkingDirectory $ParallelRoot `
+        -Description 'Codex Accounts - pick a ChatGPT login (one window)' -IconPath $iconPath
+    New-Lnk -ShortcutPath (Join-Path $desktop 'Codex Profiles.lnk') -VbsPath $vbsAccounts -WorkingDirectory $ParallelRoot `
+        -Description 'Codex Accounts - pick a login (same window as Codex Accounts)' -IconPath $iconPath
 }
 
 if (-not $SkipSkill) {
@@ -136,6 +143,8 @@ if (Test-Path -LiteralPath (Join-Path $ParallelRoot 'VERSION')) {
     Write-Output ("Version: " + (Get-Content -LiteralPath (Join-Path $ParallelRoot 'VERSION') -Raw).Trim())
 }
 Write-Output "Profile: $key"
+Write-Output "Open Desktop shortcut 'Codex Accounts' to see and pick logins."
 Write-Output "Open '$key' for the secondary account, or 'Codex Main' for the Store app."
-Write-Output "Do not run both at the same time."
+Write-Output "Do not run both Codex windows at the same time."
 Write-Output "Check with: CodexProfile.ps1 -Action verify"
+Write-Output "Agents: pool / stick / route / depleted - see docs/router.md"

@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 <#
 .SYNOPSIS
   Create, list, launch, and stop Codex Desktop profiles on Windows.
@@ -16,19 +16,30 @@
   .\CodexProfile.ps1 -Action diagnostics
   .\CodexProfile.ps1 -Action verify
   .\CodexProfile.ps1 -Action remove -Name codex2 -Force
+  .\CodexProfile.ps1 -Action pool
+  .\CodexProfile.ps1 -Action stick -Name codex1
+  .\CodexProfile.ps1 -Action route
+  .\CodexProfile.ps1 -Action depleted -Name codex1
+  .\CodexProfile.ps1 -Action depleted -Name codex1 -Disable
+  .\CodexProfile.ps1 -Action layer
+  .\CodexProfile.ps1 -Action models
+  .\CodexProfile.ps1 -Action accounts
   .\CodexProfile.ps1 -Action stop -Name codex1
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut', 'status', 'verify', 'remove', 'doctor', 'processes', 'repair', 'sync-check', 'diagnostics')]
+    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut', 'status', 'verify', 'remove', 'doctor', 'processes', 'repair', 'sync-check', 'diagnostics', 'pool', 'stick', 'route', 'depleted', 'layer', 'models', 'accounts')]
     [string]$Action,
 
     [string]$Name = 'codex1',
     [string]$SourceHome = (Join-Path $env:USERPROFILE '.codex'),
     [switch]$ForceRefreshClone,
     [switch]$AsJson,
-    [switch]$Force
+    [switch]$Force,
+    [switch]$Disable,
+    [string]$Workspace,
+    [string]$BridgeUrl = 'http://127.0.0.1:1455/v1'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -37,6 +48,10 @@ if (-not (Test-Path -LiteralPath $modulePath)) {
     throw "Missing $modulePath. Re-run Install-CodexMultiProfile.ps1."
 }
 Import-Module $modulePath -Force
+$routerMod = Join-Path $PSScriptRoot 'CodexRouter.psm1'
+if (Test-Path -LiteralPath $routerMod) {
+    Import-Module $routerMod -Force
+}
 
 $ParallelRoot = Get-CodexParallelRoot
 
@@ -179,7 +194,7 @@ try {
             Write-Output "Root: $($info.Root)"
             Write-Output "Shared home: $($info.SharedHome)"
             Write-Output "AuthSwap active: $(if ($info.SwapActive) { $info.SwapActive } else { '(none)' })"
-            Write-Output "Clone: $(if ($info.CloneExe) { $info.CloneExe } else { '(missing — install Codex Desktop)' })"
+            Write-Output "Clone: $(if ($info.CloneExe) { $info.CloneExe } else { '(missing - install Codex Desktop)' })"
             Write-Output "Main account: $($info.MainAccount)"
             Write-Output "Main backup: $($info.MainBackup)"
             if ($info.Profiles.Count -eq 0) {
@@ -286,6 +301,139 @@ try {
                 throw 'Export-CodexDiagnostics.ps1 not found. Re-run Install-CodexMultiProfile.ps1.'
             }
             & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $exporter -ParallelRoot $ParallelRoot -SourceHome $SourceHome
+        }
+        'pool' {
+            if (-not (Get-Command Get-CodexProfilePool -ErrorAction SilentlyContinue)) {
+                throw 'CodexRouter.psm1 missing. Re-run Install-CodexMultiProfile.ps1.'
+            }
+            $rows = @(Get-CodexProfilePool -ParallelRoot $ParallelRoot -SourceHome $SourceHome)
+            if ($AsJson) {
+                $rows | ConvertTo-Json -Depth 6
+                break
+            }
+            if ($rows.Count -eq 0) {
+                Write-Output 'No profiles in the pool. Create one: -Action new -Name codex1'
+                break
+            }
+            Write-Output 'Subscription pool (masked emails). One Codex window via AuthSwap.'
+            $view = @($rows | ForEach-Object {
+                $sticky = if ($_.Stickies -and @($_.Stickies).Count -gt 0) { (@($_.Stickies) -join '; ') } else { '(none)' }
+                [pscustomobject]@{
+                    Name     = $_.Name
+                    Account  = $_.Account
+                    LastUsed = $(if ($_.LastUsed) { $_.LastUsed } else { '(never)' })
+                    Depleted = $_.Depleted
+                    Sticky   = $sticky
+                }
+            })
+            $view | Format-Table -AutoSize | Out-String | Write-Output
+        }
+        'stick' {
+            if (-not (Get-Command Set-CodexProfileSticky -ErrorAction SilentlyContinue)) {
+                throw 'CodexRouter.psm1 missing. Re-run Install-CodexMultiProfile.ps1.'
+            }
+            $ws = if ($Workspace) { $Workspace } else { (Get-Location).Path }
+            if ($Disable) {
+                $result = Clear-CodexProfileSticky -Workspace $ws -ParallelRoot $ParallelRoot
+                if ($AsJson) { $result | ConvertTo-Json -Depth 4; break }
+                Write-Output ("Cleared sticky for {0}: {1}" -f $result.Workspace, $result.Cleared)
+                break
+            }
+            $result = Set-CodexProfileSticky -Name $Name -Workspace $ws -ParallelRoot $ParallelRoot
+            if ($AsJson) { $result | ConvertTo-Json -Depth 4; break }
+            Write-Output ("Sticky {0} -> {1}" -f $result.Workspace, $result.Profile)
+        }
+        'route' {
+            if (-not (Get-Command Resolve-CodexRoute -ErrorAction SilentlyContinue)) {
+                throw 'CodexRouter.psm1 missing. Re-run Install-CodexMultiProfile.ps1.'
+            }
+            $ws = if ($Workspace) { $Workspace } else { (Get-Location).Path }
+            $decision = Resolve-CodexRoute -Workspace $ws -ParallelRoot $ParallelRoot -SourceHome $SourceHome
+            if ($AsJson -and ($decision.Reason -eq 'all-depleted' -or $decision.Reason -eq 'no-profiles' -or $decision.BlockedByOpenWindow)) {
+                $decision | ConvertTo-Json -Depth 5
+                if ($decision.Reason -eq 'all-depleted' -or $decision.Reason -eq 'no-profiles') { exit 4 }
+                break
+            }
+            if ($decision.Reason -eq 'no-profiles') { throw $decision.Message }
+            if ($decision.Reason -eq 'all-depleted') {
+                Write-Output $decision.Message
+                exit 4
+            }
+            if ($decision.BlockedByOpenWindow) {
+                if ($AsJson) { $decision | ConvertTo-Json -Depth 5; break }
+                Write-Output $decision.Message
+                break
+            }
+            if ($AsJson) {
+                $decision | ConvertTo-Json -Depth 5
+            }
+            else {
+                Write-Output $decision.Message
+            }
+            $reliable = Join-Path $ParallelRoot 'Launch-CodexProfile.ps1'
+            if (-not (Test-Path -LiteralPath $reliable)) { throw "Missing $reliable" }
+            & $reliable -Name $decision.Profile -SourceHome $SourceHome
+        }
+        'depleted' {
+            if (-not (Get-Command Set-CodexProfileDepleted -ErrorAction SilentlyContinue)) {
+                throw 'CodexRouter.psm1 missing. Re-run Install-CodexMultiProfile.ps1.'
+            }
+            $result = Set-CodexProfileDepleted -Name $Name -ParallelRoot $ParallelRoot -Clear:$Disable
+            if ($AsJson) { $result | ConvertTo-Json -Depth 4; break }
+            if ($result.Depleted) {
+                Write-Output ("Marked {0} depleted. Next route will fail over." -f $result.Name)
+            }
+            else {
+                Write-Output ("Cleared depleted flag on {0}." -f $result.Name)
+            }
+        }
+        'layer' {
+            if (-not (Get-Command Set-CodexLayerEnabled -ErrorAction SilentlyContinue)) {
+                throw 'CodexRouter.psm1 missing. Re-run Install-CodexMultiProfile.ps1.'
+            }
+            $result = Set-CodexLayerEnabled -ParallelRoot $ParallelRoot -Disable:$Disable
+            if ($AsJson) { $result | ConvertTo-Json -Depth 4; break }
+            if ($result.Enabled) {
+                Write-Output ("Layer ON for the cloned ChatGPT.exe (loopback port {0}). Store app is never targeted." -f $result.CdpPort)
+            }
+            else {
+                Write-Output 'Layer OFF. Launch stays set+start with no extra port flags.'
+            }
+        }
+        'models' {
+            if (-not (Get-Command Update-CodexChatGptWebModels -ErrorAction SilentlyContinue)) {
+                throw 'CodexRouter.psm1 missing. Re-run Install-CodexMultiProfile.ps1.'
+            }
+            $cfg = Join-Path $SourceHome 'config.toml'
+            $result = Update-CodexChatGptWebModels -ConfigPath $cfg -BridgeUrl $BridgeUrl -Disable:$Disable
+            if ($AsJson) { $result | ConvertTo-Json -Depth 4; break }
+            if ($result.Enabled) {
+                Write-Output ("Wrote ChatGPT Web model block to {0} (UTF-8 no BOM)." -f $result.Path)
+                Write-Output ("Models: {0}" -f ($result.Models -join ', '))
+                Write-Output ("Bridge: {0}" -f $result.BridgeUrl)
+                Write-Output 'This repo does not log you into chatgpt.com. Point BridgeUrl at a local Responses bridge you already run on 127.0.0.1.'
+            }
+            else {
+                Write-Output ("Removed ChatGPT Web model block from {0}." -f $result.Path)
+            }
+        }
+        'accounts' {
+            $app = Join-Path $PSScriptRoot 'Show-CodexAccountApp.ps1'
+            if (-not (Test-Path -LiteralPath $app)) {
+                $app = Join-Path $ParallelRoot 'Show-CodexAccountApp.ps1'
+            }
+            if (-not (Test-Path -LiteralPath $app)) {
+                throw 'Missing Show-CodexAccountApp.ps1. Re-run Install-CodexMultiProfile.ps1.'
+            }
+            if ($AsJson) {
+                & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $app -Headless
+                break
+            }
+            Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
+                '-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden',
+                '-File', $app
+            ) | Out-Null
+            Write-Output 'Opened Codex Accounts.'
         }
     }
 }

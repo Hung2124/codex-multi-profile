@@ -1,9 +1,10 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 # AuthSwap launcher: shared ~/.codex data, per-profile ChatGPT auth.
 param(
     [string]$Name = 'codex1',
     [string]$SourceHome = (Join-Path $env:USERPROFILE '.codex'),
-    [switch]$BootstrapLogin
+    [switch]$BootstrapLogin,
+    [switch]$FastSwitch
 )
 
 $ErrorActionPreference = 'Stop'
@@ -12,6 +13,10 @@ if (-not (Test-Path -LiteralPath $modulePath)) {
     throw "Missing $modulePath. Re-run Install-CodexMultiProfile.ps1."
 }
 Import-Module $modulePath -Force
+$routerMod = Join-Path $PSScriptRoot 'CodexRouter.psm1'
+if (Test-Path -LiteralPath $routerMod) {
+    Import-Module $routerMod -Force
+}
 
 $ParallelRoot = Get-CodexParallelRoot
 $key = ConvertTo-ProfileKey -ProfileName $Name
@@ -63,15 +68,21 @@ try {
 
     $mainEmailNow = Get-AuthEmailFromFile -Path $mainAuth
     $profileEmail = Get-AuthEmailFromFile -Path $profileAuth
-    $needBootstrap = Test-NeedBootstrapLogin -ProfileEmail $profileEmail -MainEmail $mainEmailNow -Force:$BootstrapLogin
+    $mainBackupEmail = Get-AuthEmailFromFile -Path $mainAuthBak
+    $poisonRef = $mainBackupEmail
+    if ($poisonRef -eq 'MISSING') { $poisonRef = $mainEmailNow }
+    $needBootstrap = Test-NeedBootstrapLogin -ProfileEmail $profileEmail -MainEmail $poisonRef -Force:$BootstrapLogin
 
-    if ($needBootstrap -and -not $BootstrapLogin -and $profileEmail -ne 'MISSING' -and $profileEmail -eq $mainEmailNow) {
-        Write-LaunchLog "WARN profile auth same as main ($(Hide-AuthEmail -Email $profileEmail)) -> bootstrap"
+    if ($needBootstrap -and -not $BootstrapLogin -and $profileEmail -ne 'MISSING' -and $profileEmail -eq $poisonRef) {
+        Write-LaunchLog "WARN profile auth same as main backup ($(Hide-AuthEmail -Email $profileEmail)) -> bootstrap"
         if (Test-Path -LiteralPath $profileAuth) {
             Move-Item -LiteralPath $profileAuth -Destination "$profileAuth.corrupted-same-as-main-$(Get-Date -Format yyyyMMdd-HHmmss)" -Force
         }
         Remove-Item -LiteralPath $profileAuthMirror -Force -ErrorAction SilentlyContinue
         $needBootstrap = $true
+    }
+    if (-not $needBootstrap -and (Test-Path -LiteralPath $profileAuth)) {
+        Write-LaunchLog 'saved profile auth present and not poisoned - no password prompt'
     }
 
     if (-not $needBootstrap) {
@@ -84,12 +95,35 @@ try {
     Write-LaunchLog "profile auth=$(Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $profileAuth)) needBootstrap=$needBootstrap"
     Write-LaunchLog "main auth before=$(Hide-AuthEmail -Email $mainEmailNow)"
 
-    Stop-AllCodex
-    Start-Sleep -Seconds 2
+    if (Get-Command Stop-CodexAuthSwapWatchers -ErrorAction SilentlyContinue) {
+        $killed = Stop-CodexAuthSwapWatchers
+        Write-LaunchLog ("stopped {0} authswap watcher(s)" -f $killed)
+    }
+    if (Test-Path -LiteralPath $swapLock) {
+        $outgoing = (Get-Content -LiteralPath $swapLock -Raw -ErrorAction SilentlyContinue)
+        if ($outgoing) { $outgoing = $outgoing.Trim() }
+        if ($outgoing -and $outgoing -ne $key -and (Test-Path -LiteralPath $mainAuth)) {
+            $activeNow = Get-AuthEmailFromFile -Path $mainAuth
+            $bakNow = Get-AuthEmailFromFile -Path $mainAuthBak
+            if (Test-ShouldSaveProfileAuth -ActiveEmail $activeNow -MainBackupEmail $bakNow) {
+                $outAuth = Join-Path $ParallelRoot "profiles\$outgoing\auth.json"
+                New-Item -ItemType Directory -Force -Path (Split-Path $outAuth) | Out-Null
+                Copy-Item -LiteralPath $mainAuth -Destination $outAuth -Force
+                Write-LaunchLog ("saved outgoing {0} before switch -> {1}" -f $outgoing, (Hide-AuthEmail -Email $activeNow))
+            }
+        }
+    }
 
-    if ((Test-Path -LiteralPath $swapLock) -and (Test-Path -LiteralPath $mainAuthBak)) {
+    Stop-AllCodex
+    if ($FastSwitch) { Start-Sleep -Milliseconds 300 }
+    else { Start-Sleep -Seconds 2 }
+
+    if ((Test-Path -LiteralPath $swapLock) -and (Test-Path -LiteralPath $mainAuthBak) -and -not $FastSwitch) {
         Write-LaunchLog 'stale swap lock -> restore main first'
         Restore-MainAuth
+    }
+    elseif ((Test-Path -LiteralPath $swapLock) -and $FastSwitch) {
+        Write-LaunchLog 'fast switch: keep main backup, overwrite active auth with chosen profile'
     }
 
     if (-not (Test-Path -LiteralPath $mainAuthBak)) {
@@ -103,8 +137,8 @@ try {
         try {
             Add-Type -AssemblyName System.Windows.Forms
             [System.Windows.Forms.MessageBox]::Show(
-                "Sign in with the SECONDARY ChatGPT account (not the main one).`n`nAfter login, CLOSE this Codex window — auth is saved for next launch.`n`nDo not open Codex Main while this login is in progress.",
-                'Codex profile — secondary account login',
+                "Sign in with the SECONDARY ChatGPT account (not the main one).`n`nAfter login, CLOSE this Codex window - auth is saved for next launch.`n`nDo not open Codex Main while this login is in progress.",
+                'Codex profile - secondary account login',
                 'OK',
                 'Information'
             ) | Out-Null
@@ -121,17 +155,47 @@ try {
     $cloneExe = Get-CodexCloneExe -ParallelRoot $ParallelRoot
     $cloneApp = Split-Path -Parent $cloneExe
     $cmdPath = Join-Path $ParallelRoot ("launch-{0}-env.cmd" -f $key)
-    New-CodexEnvCmd -CmdPath $cmdPath -CodexHome $SourceHome -UserDataDir $root -CloneApp $cloneApp -CloneExe $cloneExe
+    $cdpPort = 0
+    if (Get-Command Get-CodexLayerState -ErrorAction SilentlyContinue) {
+        $layerState = Get-CodexLayerState -ParallelRoot $ParallelRoot
+        if ($layerState.Enabled) { $cdpPort = [int]$layerState.CdpPort }
+    }
+    New-CodexEnvCmd -CmdPath $cmdPath -CodexHome $SourceHome -UserDataDir $root -CloneApp $cloneApp -CloneExe $cloneExe -RemoteDebuggingPort $cdpPort
     Start-Process -FilePath $cmdPath -WindowStyle Hidden | Out-Null
-    Start-Sleep -Seconds 5
-
-    $proc = Get-CimInstance Win32_Process -Filter "Name='ChatGPT.exe'" -ErrorAction SilentlyContinue |
-        Where-Object { $_.ExecutablePath -like '*CodexParallelDesktop*' -or $_.CommandLine -like "*profiles\$key*" } |
-        Select-Object -First 1
+    if (Get-Command Set-CodexProfileLastUsed -ErrorAction SilentlyContinue) {
+        Set-CodexProfileLastUsed -Name $key -ParallelRoot $ParallelRoot | Out-Null
+    }
+    if ($cdpPort -gt 0) {
+        $layerScript = Join-Path $ParallelRoot 'Start-CodexLayer.ps1'
+        if (-not (Test-Path -LiteralPath $layerScript)) { $layerScript = Join-Path $PSScriptRoot 'Start-CodexLayer.ps1' }
+        if (Test-Path -LiteralPath $layerScript) {
+            Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
+                '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $layerScript,
+                '-Port', "$cdpPort", '-ParallelRoot', $ParallelRoot
+            ) | Out-Null
+        }
+    }
+    if ($FastSwitch) {
+        $deadline = (Get-Date).AddSeconds(4)
+        $proc = $null
+        while ((Get-Date) -lt $deadline) {
+            $proc = Get-CimInstance Win32_Process -Filter "Name='ChatGPT.exe'" -ErrorAction SilentlyContinue |
+                Where-Object { $_.ExecutablePath -like '*CodexParallelDesktop*' -or $_.CommandLine -like "*profiles\$key*" } |
+                Select-Object -First 1
+            if ($proc) { break }
+            Start-Sleep -Milliseconds 250
+        }
+    }
+    else {
+        Start-Sleep -Seconds 5
+        $proc = Get-CimInstance Win32_Process -Filter "Name='ChatGPT.exe'" -ErrorAction SilentlyContinue |
+            Where-Object { $_.ExecutablePath -like '*CodexParallelDesktop*' -or $_.CommandLine -like "*profiles\$key*" } |
+            Select-Object -First 1
+    }
     if (-not $proc) { throw 'Codex profile did not start. Is Codex Desktop installed?' }
 
     $watcher = Join-Path $ParallelRoot 'watch-authswap-restore.ps1'
-    Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
+    $watchArgs = @(
         '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $watcher,
         '-ProfileKey', $key,
         '-SourceHome', $SourceHome,
@@ -140,10 +204,12 @@ try {
         '-MainAuthBak', $mainAuthBak,
         '-SwapLock', $swapLock,
         '-LogPath', $log
-    ) | Out-Null
+    )
+    if ($FastSwitch) { $watchArgs += @('-InitialSleepSeconds', '0') }
+    Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList $watchArgs | Out-Null
 
     Write-LaunchLog 'DONE ok authswap'
-    $msg = if ($needBootstrap) { 'BOOTSTRAP login — sign in with the secondary account, then close the app' } else { "AuthSwap activeAuth=$(Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $mainAuth))" }
+    $msg = if ($needBootstrap) { 'BOOTSTRAP login - sign in with the secondary account, then close the app' } else { "AuthSwap activeAuth=$(Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $mainAuth))" }
     Write-Output "Launched $key $msg pid=$($proc.ProcessId)"
 }
 catch {

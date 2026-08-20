@@ -2,6 +2,23 @@
 
 All notable changes to this project are documented here.
 
+## 0.2.0 — 2026-08-20
+
+### Added
+- **Codex Accounts** desktop app (`Show-CodexAccountApp.ps1`): WPF account picker (masked email, last-used, depleted, sticky). Click / Enter closes the open Codex window then AuthSwap-launches the saved account
+- Desktop shortcut **Codex Accounts** next to Codex1 / Codex Main
+- One-command Windows install stays `irm .../install.ps1 | iex` (counterpart of b-nnett/codex-subscription-router curl|bash)
+- Subscription router (AuthSwap, one window): `pool`, `stick`, `route`, `depleted` on CodexProfile.ps1
+- Sticky git-repo/workspace -> profile; new work picks least-recently-used non-depleted profile; depleted owner fails over; all-depleted prints one combined message
+- Combined pool view with masked emails, last-used, depleted flag, sticky paths
+- Optional clone-only desktop layer (`layer` / `layer -Disable`)
+- Optional ChatGPT Web model block in `~/.codex/config.toml` (`models` / `models -Disable`)
+- `docs/router.md`, `docs/layer.md`, `tests/LayerAndRouter.Tests.ps1`
+
+### Changed
+- VERSION 0.2.0; installer packages `CodexRouter.psm1`, `Start-CodexLayer.ps1`, `layer-inject.js`, `Show-CodexAccountApp.ps1`
+- Existing Codex1 / Codex Main / doctor / verify / AuthSwap launch unchanged until you opt in
+
 ## 0.1.4 — 2026-08-14
 
 ### Added

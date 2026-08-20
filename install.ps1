@@ -7,7 +7,7 @@
   irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.ps1 | iex
 
 .EXAMPLE
-  powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Ref v0.1.4
+  powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Ref v0.2.0
 #>
 [CmdletBinding()]
 param(
@@ -18,6 +18,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if (-not $PSBoundParameters.ContainsKey('Ref') -and $env:CODEX_MP_REF) {
+    $Ref = $env:CODEX_MP_REF
+}
 $tmp = Join-Path $env:TEMP ("codex-multi-profile-" + [guid]::NewGuid().ToString('n'))
 New-Item -ItemType Directory -Force -Path $tmp | Out-Null
 
@@ -46,7 +49,12 @@ try {
     if (-not (Test-Path -LiteralPath $installer)) { throw "Installer missing: $installer" }
 
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installer -Name $Name
+
+    Write-Host ""
+    Write-Host "Desktop: Codex Accounts (pick a login). One Codex window."
+    Write-Host "Router CLI (agents): pool / stick / route / depleted - docs/router.md"
 }
+
 finally {
     if (-not $KeepDownload -and (Test-Path -LiteralPath $tmp)) {
         Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue

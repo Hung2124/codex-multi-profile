@@ -1,11 +1,12 @@
 # Codex Multi-Profile
 
 <p align="center">
-  <strong>Hai tài khoản ChatGPT trên Codex Desktop Windows.<br>Một workspace dùng chung.</strong>
+  <strong>Một app Windows để xem và chọn tài khoản ChatGPT trên Codex Desktop.<br>Một workspace dùng chung. Một cửa sổ (AuthSwap).</strong>
 </p>
 
 <p align="center">
   <a href="README.md">English</a> ·
+  <a href="docs/router.md">Router</a> ·
   <a href="docs/recipes.md">Recipes</a> ·
   <a href="docs/troubleshooting.md">Troubleshooting</a>
 </p>
@@ -16,74 +17,60 @@
 
 > Không chính thức, không liên kết OpenAI. Cần [Codex Desktop](https://chatgpt.com/codex) từ Microsoft Store.
 
-## Mục đích & sử dụng hợp lệ
+## Chọn tài khoản
 
-Repo này là **công cụ mã nguồn mở, chạy local trên Windows** dành cho developer đã có **nhiều tài khoản ChatGPT hợp lệ** (ví dụ cá nhân và công ty) và cần chuyển qua lại giữa các tài khoản trong Codex Desktop, vẫn giữ chung workspace.
+Sau khi cài, mở **Codex Accounts** trên Desktop. Đó là sản phẩm: danh sách tài khoản (tên, email đã che, lần dùng gần nhất, depleted, sticky). Bấm / Enter để mở profile qua AuthSwap.
 
-Repo **không** nhắm tới:
+Nếu Codex đang mở, app **đóng cửa sổ đó** rồi chuyển sang login đã lưu. Không hỏi mật khẩu khi `auth.json` còn và không bị poison. Đăng nhập lần đầu (profile mới) vẫn nằm trong Codex.
 
-- chia sẻ một gói trả phí cho nhiều người hoặc nhiều máy
-- vượt quota, rate limit hoặc tránh thanh toán
-- tự động đăng nhập, scrape, hoặc API không chính thức
-- bất kỳ hành vi nào trái [Điều khoản OpenAI](https://openai.com/policies/terms-of-use)
+Agent vẫn dùng CLI: `pool` / `stick` / `route` / `depleted`.
 
-Chỉ dùng tài khoản bạn sở hữu hoặc được phép dùng. PR hướng tới lạm dụng nằm ngoài phạm vi ([CONTRIBUTING.md](CONTRIBUTING.md)).
-
----
-
-## Vấn đề
-
-`CODEX_HOME` thứ hai thường **không** đổi acc — app vẫn đọc `~\.codex\auth.json`.
-
-Repo này dùng **AuthSwap**: lúc mở profile thì chép token acc phụ vào đúng file app đọc; lúc đóng thì restore acc chính. Session / skill / MCP vẫn dùng chung.
-
-<p align="center">
-  <img src="docs/images/flow.png" alt="Luồng AuthSwap" width="920">
-</p>
-
----
-
-## Cài
-
-1. Cài Codex Desktop, đăng nhập acc **chính** một lần, rồi đóng app.
-2. PowerShell:
+## Cài (một lệnh)
 
 ```powershell
-git clone https://github.com/Hung2124/codex-multi-profile.git
-cd codex-multi-profile
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-CodexMultiProfile.ps1
+irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.ps1 | iex
 ```
 
-3. Shortcut:
-   - **Codex1** — acc phụ (lần đầu sẽ kêu đăng nhập)
-   - **Codex Main** — restore acc gốc rồi mở Store Codex
-   - **Codex Profiles** — list / tạo profile khác
+Giống one-liner curl|bash của b-nnett/codex-subscription-router — không vá ChatGPT.exe.
 
-Không mở hai cửa sổ cùng lúc.
+1. Cài Codex Desktop, đăng nhập acc chính một lần, rồi đóng app.
+2. Chạy lệnh trên.
+3. Shortcut **Codex Accounts** (chính) / Codex1 / Codex Main / Codex Profiles.
 
-### Kiểm tra sau khi cài
+## Router
+
+**Người dùng:** mở **Codex Accounts**. **Agent:** `CodexProfile.ps1 -Action route`.
+
+Bảng định tuyến kiểu subscription-router, vẫn một cửa sổ vì AuthSwap chỉ có một ~/.codex/auth.json. Chi tiết: [docs/router.md](docs/router.md).
+
+| Tình huống | Cách xử lý |
+|:---|:---|
+| Chat / folder mới | Profile non-depleted dùng lâu nhất (LRU) |
+| Cùng git repo / workspace | Sticky owner |
+| Owner bị đánh dấu depleted | Failover sang profile còn lại |
+| Tất cả depleted | Một thông báo gộp (email đã che). Không mở app |
+| Đang mở một cửa sổ Codex | App đóng clone rồi chuyển acc. CLI `route` chỉ in lựa chọn |
 
 ```powershell
 $m = "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1"
-powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action doctor
-powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action status
+powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action pool
+powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action stick -Name codex1
+powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action route
 ```
 
-`status` / `doctor` che email (ví dụ `al***@gmail.com`).
+Chỉ dùng tài khoản bạn sở hữu / được phép. depleted là cờ local — không phải công cụ vượt quota.
 
-Khóa AuthSwap kẹt:
+## Mục đích & sử dụng hợp lệ
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action repair
-```
+Repo này là công cụ mã nguồn mở, chạy local trên Windows dành cho developer đã có nhiều tài khoản ChatGPT hợp lệ (ví dụ cá nhân và công ty).
 
-Gói log an toàn để mở issue:
+Repo không nhắm tới chia sẻ gói trả phí, vượt quota, scrape, API không chính thức, hoặc trái Điều khoản OpenAI.
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action diagnostics
-```
+## AuthSwap
 
----
+CODEX_HOME thứ hai thường không đổi acc — app vẫn đọc ~/.codex/auth.json. AuthSwap chép token acc phụ vào đúng file app đọc; lúc đóng thì restore acc chính.
+
+Layer và model ChatGPT Web tắt mặc định (-Action layer / -Action models).
 
 ## Gỡ
 
@@ -91,12 +78,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action diagnostics
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Uninstall-CodexMultiProfile.ps1
 ```
 
-Không xóa `~\.codex`.
-
----
+Không xóa ~/.codex.
 
 ## Tài liệu
 
+- [Router](docs/router.md)
 - [Architecture](docs/architecture.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [FAQ](docs/faq.md)
