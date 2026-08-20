@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 Set-StrictMode -Version Latest
 
-$script:ModuleVersion = '0.1.3'
+$script:ModuleVersion = '0.2.0'
 
 function Get-CodexMultiProfileVersion {
     $candidates = @(
@@ -158,8 +158,13 @@ function New-CodexEnvCmd {
         [Parameter(Mandatory)] [string]$CodexHome,
         [Parameter(Mandatory)] [string]$UserDataDir,
         [Parameter(Mandatory)] [string]$CloneApp,
-        [Parameter(Mandatory)] [string]$CloneExe
+        [Parameter(Mandatory)] [string]$CloneExe,
+        [int]$RemoteDebuggingPort = 0
     )
+    $extra = ''
+    if ($RemoteDebuggingPort -gt 0) {
+        $extra = " --" + "remote-debugging-address=127.0.0.1 --" + "remote-debugging-port=$RemoteDebuggingPort"
+    }
     $cmd = @"
 @echo off
 set "CODEX_HOME=$CodexHome"
@@ -169,7 +174,7 @@ set "OPENAI_API_KEY="
 set "ANTHROPIC_BASE_URL="
 set "ANTHROPIC_API_KEY="
 set "CODEX_THREAD_ID="
-start "" /D "$CloneApp" "$CloneExe" --user-data-dir="$UserDataDir"
+start "" /D "$CloneApp" "$CloneExe" --user-data-dir="$UserDataDir"$extra
 "@
     Write-Utf8NoBom -Path $CmdPath -Text $cmd
 }
@@ -377,7 +382,10 @@ function Get-CodexPackagedScriptNames {
         'CodexProfiles-Menu.ps1',
         'Redact-LaunchTrace.ps1',
         'Export-CodexDiagnostics.ps1',
-        'Update-CodexMultiProfile.ps1'
+        'Update-CodexMultiProfile.ps1',
+        'CodexRouter.psm1',
+        'Start-CodexLayer.ps1',
+        'layer-inject.js'
     )
 }
 
