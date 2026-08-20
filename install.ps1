@@ -12,7 +12,7 @@
 [CmdletBinding()]
 param(
     [string]$Repo = 'Hung2124/codex-multi-profile',
-    [string]$Ref = 'feature/windows-codex-accounts-app',
+    [string]$Ref = 'main',
     [string]$Name = 'codex1',
     [switch]$KeepDownload
 )
