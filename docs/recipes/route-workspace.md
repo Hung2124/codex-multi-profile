@@ -1,5 +1,7 @@
 # Recipe: route this repo to a profile
 
+Humans: pick the account in **Codex Accounts**. This page is the agent/script path.
+
 From the project folder:
 
 ```powershell
