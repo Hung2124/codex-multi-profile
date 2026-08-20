@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 # AuthSwap launcher: shared ~/.codex data, per-profile ChatGPT auth.
 param(
     [string]$Name = 'codex1',
