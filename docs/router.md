@@ -1,10 +1,28 @@
 # Subscription router (Windows)
 
+**Pick accounts in the Codex Accounts app.** The CLI (`pool` / `stick` / `route` / `depleted`) is for agents and scripts.
+
 Windows counterpart of [b-nnett/codex-subscription-router](https://github.com/b-nnett/codex-subscription-router) routing — **without** their Go mux or a ChatGPT.exe / `app.asar` patch.
 
-AuthSwap still owns a **single** `~/.codex/auth.json`. Only one Codex window can be live. The router chooses which of your profiles that window should use.
+AuthSwap still owns a **single** `~/.codex/auth.json`. Only one Codex window can be live.
 
 Use only **authorized personal / work accounts you own**. Marking a profile `depleted` is a local flag you set. This is not a quota-bypass product.
+
+## Codex Accounts (the app)
+
+Desktop shortcut **Codex Accounts** after install (`Show-CodexAccountApp.ps1`):
+
+- Rows: profile name, masked email, last-used, depleted badge, sticky paths
+- Click / Enter → `Launch-CodexProfile.ps1` (AuthSwap)
+- If a Codex window is already open → close the clone, then AuthSwap-launch the chosen saved login (no password prompt)
+- **Add profile**, **Open Main**, **Mark depleted / clear**, **Refresh**
+- First-run login is still AuthSwap bootstrap inside Codex. This app does not implement chatgpt.com / device-code login
+
+```powershell
+powershell -NoProfile -STA -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\Show-CodexAccountApp.ps1"
+```
+
+Headless (tests / agents, no window): `-Headless`.
 
 ## One-command install
 
@@ -12,7 +30,7 @@ Use only **authorized personal / work accounts you own**. Marking a profile `dep
 irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.ps1 | iex
 ```
 
-Same idea as their `curl | bash`: download + install. Then the desktop shortcuts and `CodexProfile.ps1` actions are on this machine.
+Same idea as their `curl | bash`: download + install. Then **Codex Accounts** and `CodexProfile.ps1` actions are on this machine.
 
 ## Routing table
 
@@ -26,7 +44,7 @@ Same idea as their `curl | bash`: download + install. Then the desktop shortcuts
 
 There is no live multi-account mux in one Electron window. Close the current Codex UI, then `route` again.
 
-## Commands
+## CLI (agents)
 
 ```powershell
 $m = "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1"
