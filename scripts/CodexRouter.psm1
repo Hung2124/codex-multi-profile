@@ -435,8 +435,8 @@ function Get-CodexChatGptWebModelsBlock {
     }
     $body = @(
         '# BEGIN CODEX-MULTI-PROFILE CHATGPT-WEB'
-        '# Opt-in aliases for a local ChatGPT Web bridge (e.g. miuuyy/codex-chatgpt-web).'
-        '# This repo does not log you into chatgpt.com. Start that launcher separately.'
+        '# Opt-in aliases for a local Responses API bridge you already run on 127.0.0.1.'
+        '# This repo does not log you into chatgpt.com and does not start a companion app.'
         ''
         '[model_providers.chatgpt-web]'
         'name = "ChatGPT Web"'
