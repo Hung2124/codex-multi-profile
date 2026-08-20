@@ -385,7 +385,8 @@ function Get-CodexPackagedScriptNames {
         'Update-CodexMultiProfile.ps1',
         'CodexRouter.psm1',
         'Start-CodexLayer.ps1',
-        'layer-inject.js'
+        'layer-inject.js',
+        'Show-CodexAccountApp.ps1'
     )
 }
 
@@ -452,6 +453,25 @@ function Clear-StaleAuthSwapLock {
     }
 }
 
+
+function Stop-CodexAuthSwapWatchers {
+    <#
+    .SYNOPSIS
+      Kill AuthSwap restore watchers so a one-click switch cannot race restore-main.
+    #>
+    $killed = 0
+    Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.Name -match 'powershell|pwsh' -and
+            [string]$_.CommandLine -like '*watch-authswap-restore.ps1*'
+        } |
+        ForEach-Object {
+            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+            $killed = $killed + 1
+        }
+    return $killed
+}
+
 Export-ModuleMember -Function @(
     'Get-CodexMultiProfileVersion',
     'Get-CodexParallelRoot',
@@ -470,5 +490,6 @@ Export-ModuleMember -Function @(
     'Test-NeedBootstrapLogin',
     'Test-ShouldSaveProfileAuth',
     'Get-CodexCloneExe',
-    'New-CodexEnvCmd'
+    'New-CodexEnvCmd',
+    'Stop-CodexAuthSwapWatchers'
 )
