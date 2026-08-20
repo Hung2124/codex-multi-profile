@@ -21,6 +21,11 @@ function Write-LaunchLog([string]$Message) {
 
 Write-LaunchLog 'Launch-CodexMain start'
 
+if (Get-Command Stop-CodexAuthSwapWatchers -ErrorAction SilentlyContinue) {
+    $n = Stop-CodexAuthSwapWatchers
+    Write-LaunchLog ("stopped {0} authswap watcher(s)" -f $n)
+}
+
 if (Test-Path -LiteralPath $swapLock) {
     $key = (Get-Content -LiteralPath $swapLock -Raw -ErrorAction SilentlyContinue).Trim()
     if ($key) {
@@ -47,7 +52,7 @@ if (Test-Path -LiteralPath $swapLock) {
 Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
     Where-Object { $_.ExecutablePath -like '*CodexParallelDesktop*' -and $_.Name -match '^(ChatGPT|codex)(-code-mode-host)?\.exe$' } |
     ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-Start-Sleep -Seconds 1
+Start-Sleep -Milliseconds 400
 
 if (Test-Path -LiteralPath $mainAuthBak) {
     Copy-Item -LiteralPath $mainAuthBak -Destination $mainAuth -Force
