@@ -18,6 +18,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\Run-All.ps1
 
 ## Scope
 
-In scope: AuthSwap, Store clone, shortcuts, the agent skill, doctor/repair/diagnostics tooling, tests for the poison guard.
+In scope: AuthSwap, Store clone, shortcuts, the agent skill, doctor/repair/diagnostics, the Windows subscription router (pool/stick/route/depleted), tests for the poison guard and router.
 
-Out of scope: unofficial API proxies, automating ChatGPT sign-in, or shipping tokens.
+Out of scope: unofficial API proxies, automating ChatGPT sign-in, shipping tokens, a Go mux, asar/ChatGPT.exe patchers, or quota-bypass features.
