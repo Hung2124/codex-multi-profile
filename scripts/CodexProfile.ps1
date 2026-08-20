@@ -23,12 +23,13 @@
   .\CodexProfile.ps1 -Action depleted -Name codex1 -Disable
   .\CodexProfile.ps1 -Action layer
   .\CodexProfile.ps1 -Action models
+  .\CodexProfile.ps1 -Action accounts
   .\CodexProfile.ps1 -Action stop -Name codex1
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut', 'status', 'verify', 'remove', 'doctor', 'processes', 'repair', 'sync-check', 'diagnostics', 'pool', 'stick', 'route', 'depleted', 'layer', 'models')]
+    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut', 'status', 'verify', 'remove', 'doctor', 'processes', 'repair', 'sync-check', 'diagnostics', 'pool', 'stick', 'route', 'depleted', 'layer', 'models', 'accounts')]
     [string]$Action,
 
     [string]$Name = 'codex1',
@@ -415,6 +416,24 @@ try {
             else {
                 Write-Output ("Removed ChatGPT Web model block from {0}." -f $result.Path)
             }
+        }
+        'accounts' {
+            $app = Join-Path $PSScriptRoot 'Show-CodexAccountApp.ps1'
+            if (-not (Test-Path -LiteralPath $app)) {
+                $app = Join-Path $ParallelRoot 'Show-CodexAccountApp.ps1'
+            }
+            if (-not (Test-Path -LiteralPath $app)) {
+                throw 'Missing Show-CodexAccountApp.ps1. Re-run Install-CodexMultiProfile.ps1.'
+            }
+            if ($AsJson) {
+                & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $app -Headless
+                break
+            }
+            Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
+                '-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden',
+                '-File', $app
+            ) | Out-Null
+            Write-Output 'Opened Codex Accounts.'
         }
     }
 }
