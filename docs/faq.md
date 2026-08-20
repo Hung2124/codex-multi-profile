@@ -1,5 +1,9 @@
 # FAQ
 
+## How do I pick an account in a window?
+
+Open the Desktop shortcut **Codex Accounts** (or `Show-CodexAccountApp.ps1`). Click a row or press Enter. That is the product UI. `route` stays for agents.
+
 ## Can I run Store Codex and Codex1 at the same time?
 
 No. AuthSwap owns `~\.codex\auth.json` for one process. Close one, then open the other. Use **Codex Main** to restore the original account.
@@ -76,6 +80,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexPara
 Paste the redacted files, not `auth.json`.
 
 ## How do I pick a profile for this repo (router)?
+
+Prefer **Codex Accounts** for a human. For a script:
+
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1" -Action pool
