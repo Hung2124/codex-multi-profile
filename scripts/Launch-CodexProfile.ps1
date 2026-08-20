@@ -12,6 +12,10 @@ if (-not (Test-Path -LiteralPath $modulePath)) {
     throw "Missing $modulePath. Re-run Install-CodexMultiProfile.ps1."
 }
 Import-Module $modulePath -Force
+$routerMod = Join-Path $PSScriptRoot 'CodexRouter.psm1'
+if (Test-Path -LiteralPath $routerMod) {
+    Import-Module $routerMod -Force
+}
 
 $ParallelRoot = Get-CodexParallelRoot
 $key = ConvertTo-ProfileKey -ProfileName $Name
@@ -121,8 +125,26 @@ try {
     $cloneExe = Get-CodexCloneExe -ParallelRoot $ParallelRoot
     $cloneApp = Split-Path -Parent $cloneExe
     $cmdPath = Join-Path $ParallelRoot ("launch-{0}-env.cmd" -f $key)
-    New-CodexEnvCmd -CmdPath $cmdPath -CodexHome $SourceHome -UserDataDir $root -CloneApp $cloneApp -CloneExe $cloneExe
+    $cdpPort = 0
+    if (Get-Command Get-CodexLayerState -ErrorAction SilentlyContinue) {
+        $layerState = Get-CodexLayerState -ParallelRoot $ParallelRoot
+        if ($layerState.Enabled) { $cdpPort = [int]$layerState.CdpPort }
+    }
+    New-CodexEnvCmd -CmdPath $cmdPath -CodexHome $SourceHome -UserDataDir $root -CloneApp $cloneApp -CloneExe $cloneExe -RemoteDebuggingPort $cdpPort
     Start-Process -FilePath $cmdPath -WindowStyle Hidden | Out-Null
+    if (Get-Command Set-CodexProfileLastUsed -ErrorAction SilentlyContinue) {
+        Set-CodexProfileLastUsed -Name $key -ParallelRoot $ParallelRoot | Out-Null
+    }
+    if ($cdpPort -gt 0) {
+        $layerScript = Join-Path $ParallelRoot 'Start-CodexLayer.ps1'
+        if (-not (Test-Path -LiteralPath $layerScript)) { $layerScript = Join-Path $PSScriptRoot 'Start-CodexLayer.ps1' }
+        if (Test-Path -LiteralPath $layerScript) {
+            Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
+                '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $layerScript,
+                '-Port', "$cdpPort", '-ParallelRoot', $ParallelRoot
+            ) | Out-Null
+        }
+    }
     Start-Sleep -Seconds 5
 
     $proc = Get-CimInstance Win32_Process -Filter "Name='ChatGPT.exe'" -ErrorAction SilentlyContinue |
