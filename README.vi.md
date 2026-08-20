@@ -1,7 +1,7 @@
 # Codex Multi-Profile
 
 <p align="center">
-  <strong>Hai (hoặc nhiều) tài khoản ChatGPT hợp lệ trên Codex Desktop Windows.<br>Một workspace dùng chung. Một cửa sổ (AuthSwap).</strong>
+  <strong>Một app Windows để xem và chọn tài khoản ChatGPT trên Codex Desktop.<br>Một workspace dùng chung. Một cửa sổ (AuthSwap).</strong>
 </p>
 
 <p align="center">
@@ -17,6 +17,14 @@
 
 > Không chính thức, không liên kết OpenAI. Cần [Codex Desktop](https://chatgpt.com/codex) từ Microsoft Store.
 
+## Chọn tài khoản
+
+Sau khi cài, mở **Codex Accounts** trên Desktop. Đó là sản phẩm: danh sách tài khoản (tên, email đã che, lần dùng gần nhất, depleted, sticky). Bấm / Enter để mở profile qua AuthSwap.
+
+Nếu Codex đang mở, app **đóng cửa sổ đó** rồi chuyển sang login đã lưu. Không hỏi mật khẩu khi `auth.json` còn và không bị poison. Đăng nhập lần đầu (profile mới) vẫn nằm trong Codex.
+
+Agent vẫn dùng CLI: `pool` / `stick` / `route` / `depleted`.
+
 ## Cài (một lệnh)
 
 ```powershell
@@ -27,9 +35,11 @@ Giống one-liner curl|bash của b-nnett/codex-subscription-router — không v
 
 1. Cài Codex Desktop, đăng nhập acc chính một lần, rồi đóng app.
 2. Chạy lệnh trên.
-3. Shortcut Codex1 / Codex Main / Codex Profiles như 0.1.4.
+3. Shortcut **Codex Accounts** (chính) / Codex1 / Codex Main / Codex Profiles.
 
 ## Router
+
+**Người dùng:** mở **Codex Accounts**. **Agent:** `CodexProfile.ps1 -Action route`.
 
 Bảng định tuyến kiểu subscription-router, vẫn một cửa sổ vì AuthSwap chỉ có một ~/.codex/auth.json. Chi tiết: [docs/router.md](docs/router.md).
 
@@ -39,7 +49,7 @@ Bảng định tuyến kiểu subscription-router, vẫn một cửa sổ vì Au
 | Cùng git repo / workspace | Sticky owner |
 | Owner bị đánh dấu depleted | Failover sang profile còn lại |
 | Tất cả depleted | Một thông báo gộp (email đã che). Không mở app |
-| Đang mở một cửa sổ Codex | In lựa chọn, không mở cửa sổ thứ hai |
+| Đang mở một cửa sổ Codex | App đóng clone rồi chuyển acc. CLI `route` chỉ in lựa chọn |
 
 ```powershell
 $m = "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1"
