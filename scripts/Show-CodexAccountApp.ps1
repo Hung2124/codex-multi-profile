@@ -57,14 +57,14 @@ else {
 
 function Format-AccountLastUsed {
     param($Value)
-    if ($null -eq $Value) { return 'Never used' }
+    if ($null -eq $Value) { return 'Chua dung' }
     $text = [string]$Value
-    if ([string]::IsNullOrWhiteSpace($text)) { return 'Never used' }
+    if ([string]::IsNullOrWhiteSpace($text)) { return 'Chua dung' }
     try {
         $dt = [datetime]$text
         $local = $dt.ToLocalTime()
         $age = (Get-Date) - $local
-        if ($age.TotalMinutes -lt 1) { return 'Just now' }
+        if ($age.TotalMinutes -lt 1) { return 'Vua xong' }
         if ($age.TotalHours -lt 1) { return ('{0}m ago' -f [int]$age.TotalMinutes) }
         if ($age.TotalDays -lt 1) { return ('{0}h ago' -f [int]$age.TotalHours) }
         if ($age.TotalDays -lt 7) { return ('{0}d ago' -f [int]$age.TotalDays) }
@@ -129,7 +129,7 @@ function Get-CodexAccountAppRows {
         $lastRaw = $null
         if ($row.PSObject.Properties['LastUsed']) { $lastRaw = $row.LastUsed }
         $subBits = @()
-        if ($needsLogin) { $subBits += 'Sign-in on first open (inside Codex)' }
+        if ($needsLogin) { $subBits += 'Lan dau: dang nhap trong Codex' }
         else { $subBits += $email }
         $subBits += (Format-AccountLastUsed -Value $lastRaw)
         if ($sticky) { $subBits += ('Sticky  ' + $sticky) }
@@ -187,7 +187,7 @@ function Start-CodexAccountProfile {
     return [pscustomobject]@{
         Ok      = $true
         Blocked = $false
-        Message = ("Switching to {0}..." -f $key)
+        Message = ("Dang chuyen sang {0}..." -f $key)
     }
 }
 
@@ -207,7 +207,7 @@ function Start-CodexAccountMain {
     return [pscustomobject]@{
         Ok      = $true
         Blocked = $false
-        Message = 'Opening Main...'
+        Message = 'Dang mo tai khoan chinh...'
     }
 }
 
@@ -269,23 +269,23 @@ Add-Type -AssemblyName System.Xaml
 $xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Codex Accounts"
-        Width="480" Height="620"
-        MinWidth="420" MinHeight="520"
+        Title="Tai khoan Codex"
+        Width="520" Height="680"
+        MinWidth="460" MinHeight="560"
         WindowStartupLocation="CenterScreen"
-        Background="#0B0D10"
-        Foreground="#F4F1EA"
+        Background="#F3EEE4"
+        Foreground="#2C261E"
         FontFamily="Segoe UI"
         FontSize="13"
         SnapsToDevicePixels="True"
         UseLayoutRounding="True">
   <Window.Resources>
     <Style x:Key="GhostButton" TargetType="Button">
-      <Setter Property="Background" Value="#161A20"/>
-      <Setter Property="Foreground" Value="#F4F1EA"/>
-      <Setter Property="BorderBrush" Value="#2A3038"/>
+      <Setter Property="Background" Value="#FFFBF5"/>
+      <Setter Property="Foreground" Value="#2C261E"/>
+      <Setter Property="BorderBrush" Value="#D9CFC0"/>
       <Setter Property="BorderThickness" Value="1"/>
-      <Setter Property="Padding" Value="12,7"/>
+      <Setter Property="Padding" Value="14,8"/>
       <Setter Property="FontSize" Value="12"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="Cursor" Value="Hand"/>
@@ -295,16 +295,16 @@ $xaml = @'
             <Border x:Name="bd" Background="{TemplateBinding Background}"
                     BorderBrush="{TemplateBinding BorderBrush}"
                     BorderThickness="{TemplateBinding BorderThickness}"
-                    CornerRadius="8" Padding="{TemplateBinding Padding}">
+                    CornerRadius="14" Padding="{TemplateBinding Padding}">
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="bd" Property="Background" Value="#1E242C"/>
-                <Setter TargetName="bd" Property="BorderBrush" Value="#3A424C"/>
+                <Setter TargetName="bd" Property="Background" Value="#EFE6D6"/>
+                <Setter TargetName="bd" Property="BorderBrush" Value="#C9BBA6"/>
               </Trigger>
               <Trigger Property="IsPressed" Value="True">
-                <Setter TargetName="bd" Property="Background" Value="#10141A"/>
+                <Setter TargetName="bd" Property="Background" Value="#E4D8C4"/>
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
                 <Setter TargetName="bd" Property="Opacity" Value="0.4"/>
@@ -315,30 +315,35 @@ $xaml = @'
       </Setter>
     </Style>
     <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
-      <Setter Property="Background" Value="#10A37F"/>
-      <Setter Property="Foreground" Value="#04140F"/>
-      <Setter Property="BorderBrush" Value="#10A37F"/>
+      <Setter Property="Background" Value="#3D6B4F"/>
+      <Setter Property="Foreground" Value="#F7F2EA"/>
+      <Setter Property="BorderBrush" Value="#3D6B4F"/>
     </Style>
     <Style TargetType="ListBoxItem">
       <Setter Property="Padding" Value="0"/>
-      <Setter Property="Margin" Value="0,0,0,8"/>
+      <Setter Property="Margin" Value="0,0,0,12"/>
       <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
       <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="ListBoxItem">
-            <Border x:Name="card" Background="#14181E" BorderBrush="#222830"
-                    BorderThickness="1" CornerRadius="10" Padding="14,12">
-              <ContentPresenter/>
+            <Border x:Name="shell" Background="#E8DFD2" BorderBrush="#E8DFD2"
+                    BorderThickness="1" CornerRadius="18" Padding="4">
+              <Border x:Name="card" Background="#FFFBF5" BorderBrush="#E4DACB"
+                      BorderThickness="1" CornerRadius="14" Padding="16,14">
+                <ContentPresenter/>
+              </Border>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="card" Property="Background" Value="#1A1F26"/>
-                <Setter TargetName="card" Property="BorderBrush" Value="#2E3540"/>
+                <Setter TargetName="card" Property="Background" Value="#FFF8EE"/>
+                <Setter TargetName="card" Property="BorderBrush" Value="#CDBFA8"/>
               </Trigger>
               <Trigger Property="IsSelected" Value="True">
-                <Setter TargetName="card" Property="Background" Value="#12231D"/>
-                <Setter TargetName="card" Property="BorderBrush" Value="#10A37F"/>
+                <Setter TargetName="card" Property="Background" Value="#F4F7F1"/>
+                <Setter TargetName="card" Property="BorderBrush" Value="#3D6B4F"/>
+                <Setter TargetName="shell" Property="Background" Value="#D5E0D6"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -346,7 +351,7 @@ $xaml = @'
       </Setter>
     </Style>
   </Window.Resources>
-  <Grid Margin="20,18,20,16">
+  <Grid Margin="24,22,24,18">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="*"/>
@@ -354,13 +359,16 @@ $xaml = @'
       <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
 
-    <DockPanel Grid.Row="0" LastChildFill="True" Margin="0,0,0,16">
+    <DockPanel Grid.Row="0" LastChildFill="True" Margin="0,0,0,18">
       <Button x:Name="RefreshBtn" DockPanel.Dock="Right" Style="{StaticResource GhostButton}"
-              Content="Refresh" Margin="10,0,0,0" MinWidth="84"/>
+              Content="Lam moi" Margin="12,0,0,0" MinWidth="92"/>
       <StackPanel>
-        <TextBlock Text="Codex Accounts" FontSize="22" FontWeight="SemiBold" Foreground="#F7F4EE"/>
-        <TextBlock Text="Click a row to switch. One window." Margin="0,4,0,0"
-                   Foreground="#8B93A0" FontSize="12"/>
+        <TextBlock Text="TAI KHOAN" FontSize="11" FontWeight="SemiBold"
+                   Foreground="#8A7F70"/>
+        <TextBlock Text="Codex Accounts" FontSize="26" FontWeight="SemiBold"
+                   Foreground="#2C261E" Margin="0,2,0,0"/>
+        <TextBlock Text="Bam mot lan tren the. Cua so nay khong tat."
+                   Margin="0,6,0,0" Foreground="#7A7166" FontSize="13"/>
       </StackPanel>
     </DockPanel>
 
@@ -376,40 +384,41 @@ $xaml = @'
                 <ColumnDefinition Width="Auto"/>
               </Grid.ColumnDefinitions>
               <StackPanel Grid.Column="0">
-                <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold"
-                           Foreground="#F4F1EA"/>
-                <TextBlock Text="{Binding Subtitle}" Margin="0,4,0,0" TextWrapping="Wrap"
-                           Foreground="#8B93A0" FontSize="12"/>
+                <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold"
+                           Foreground="#2C261E"/>
+                <TextBlock Text="{Binding Subtitle}" Margin="0,6,0,0" TextWrapping="Wrap"
+                           Foreground="#7A7166" FontSize="12"/>
               </StackPanel>
-              <Border Grid.Column="1" Margin="10,0,0,0" Padding="8,3" CornerRadius="8"
-                      Background="#3A1F1F" VerticalAlignment="Top"
+              <Border Grid.Column="1" Margin="12,0,0,0" Padding="10,4" CornerRadius="999"
+                      Background="#F3E1D6" VerticalAlignment="Top"
                       Visibility="{Binding DepletedVisibility}">
-                <TextBlock Text="DEPLETED" Foreground="#F5A3A3" FontSize="10"
+                <TextBlock Text="HET HAN" Foreground="#8A4B32" FontSize="10"
                            FontWeight="Bold"/>
               </Border>
             </Grid>
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
-      <TextBlock x:Name="EmptyHint" Text="No profiles yet. Add one - first open signs in inside Codex."
-                 Foreground="#6B7380" FontSize="13" TextWrapping="Wrap"
+      <TextBlock x:Name="EmptyHint" Text="Chua co nick. Bam Them nick - lan dau dang nhap trong Codex."
+                 Foreground="#8A7F70" FontSize="14" TextWrapping="Wrap"
                  HorizontalAlignment="Center" VerticalAlignment="Center"
-                 Visibility="Collapsed" Margin="24"/>
+                 Visibility="Collapsed" Margin="28"/>
     </Grid>
 
-    <WrapPanel Grid.Row="2" Margin="0,14,0,10">
-      <Button x:Name="OpenBtn" Style="{StaticResource AccentButton}" Content="Open" MinWidth="88" Margin="0,0,8,8"/>
-      <Button x:Name="AddBtn" Style="{StaticResource GhostButton}" Content="Add profile" MinWidth="104" Margin="0,0,8,8"/>
-      <Button x:Name="MainBtn" Style="{StaticResource GhostButton}" Content="Open Main" MinWidth="104" Margin="0,0,8,8"/>
-      <Button x:Name="DepletedBtn" Style="{StaticResource GhostButton}" Content="Mark depleted" MinWidth="124" Margin="0,0,8,8"/>
+    <WrapPanel Grid.Row="2" Margin="0,16,0,10">
+      <Button x:Name="OpenBtn" Style="{StaticResource AccentButton}" Content="Mo nick" MinWidth="100" Margin="0,0,8,8"/>
+      <Button x:Name="AddBtn" Style="{StaticResource GhostButton}" Content="Them nick" MinWidth="104" Margin="0,0,8,8"/>
+      <Button x:Name="MainBtn" Style="{StaticResource GhostButton}" Content="Tai khoan chinh" MinWidth="128" Margin="0,0,8,8"/>
+      <Button x:Name="DepletedBtn" Style="{StaticResource GhostButton}" Content="Het han" MinWidth="100" Margin="0,0,8,8"/>
     </WrapPanel>
 
-    <TextBlock x:Name="StatusText" Grid.Row="3" Foreground="#6B7380" FontSize="11"
+    <TextBlock x:Name="StatusText" Grid.Row="3" Foreground="#8A7F70" FontSize="12"
                TextWrapping="Wrap"
-               Text="Authorized accounts you own. First-run login still happens inside Codex."/>
+               Text="Bam mot lan. Nick da luu khong hoi password. Cua so nay giu nguyen."/>
   </Grid>
 </Window>
 '@
+
 
 function Show-AccountNotice {
     param(
@@ -429,32 +438,33 @@ function Show-AddAccountDialog {
     param($Owner)
     $dlgXaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        Title="Add profile" Width="360" Height="210"
+        Title="Them nick" Width="380" Height="230"
         WindowStartupLocation="CenterOwner"
-        Background="#0B0D10" Foreground="#F4F1EA"
+        Background="#F3EEE4" Foreground="#2C261E"
         FontFamily="Segoe UI" FontSize="13"
         ResizeMode="NoResize" ShowInTaskbar="False">
-  <Grid Margin="20">
+  <Grid Margin="22">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="*"/>
       <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
-    <TextBlock Text="New profile name" FontWeight="SemiBold" Foreground="#F7F4EE"/>
-    <TextBlock Grid.Row="1" Margin="0,6,0,10" Foreground="#8B93A0" FontSize="11"
-               Text="Letters, numbers, hyphen. Sign-in still happens inside Codex on first open."
+    <TextBlock Text="Ten nick moi" FontWeight="SemiBold" Foreground="#2C261E" FontSize="16"/>
+    <TextBlock Grid.Row="1" Margin="0,8,0,12" Foreground="#7A7166" FontSize="12"
+               Text="Chu, so, gach ngang. Lan dau van dang nhap trong Codex."
                TextWrapping="Wrap"/>
-    <TextBox x:Name="NameBox" Grid.Row="2" Height="32" Padding="8,6"
-             Background="#161A20" Foreground="#F4F1EA" BorderBrush="#2A3038"
-             CaretBrush="#F4F1EA" Text="codex2"/>
-    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
-      <Button x:Name="CancelBtn" Width="88" Height="30" Margin="0,0,8,0" Content="Cancel"/>
-      <Button x:Name="OkBtn" Width="88" Height="30" Content="Create" IsDefault="True"/>
+    <TextBox x:Name="NameBox" Grid.Row="2" Height="36" Padding="10,8"
+             Background="#FFFBF5" Foreground="#2C261E" BorderBrush="#D9CFC0"
+             CaretBrush="#2C261E" Text="codex2"/>
+    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+      <Button x:Name="CancelBtn" Width="96" Height="34" Margin="0,0,8,0" Content="Huy"/>
+      <Button x:Name="OkBtn" Width="96" Height="34" Content="Tao" IsDefault="True"/>
     </StackPanel>
   </Grid>
 </Window>
 '@
+
     $dlg = [Windows.Markup.XamlReader]::Parse($dlgXaml)
     if ($Owner) { $dlg.Owner = $Owner }
     $box = $dlg.FindName('NameBox')
@@ -505,15 +515,15 @@ function Get-SelectedAccount {
 function Update-DepletedButton {
     $sel = Get-SelectedAccount
     if ($null -eq $sel) {
-        $depBtn.Content = 'Mark depleted'
+        $depBtn.Content = 'Het han'
         $depBtn.IsEnabled = $false
         $openBtn.IsEnabled = $false
         return
     }
     $openBtn.IsEnabled = $true
     $depBtn.IsEnabled = $true
-    if ($sel.Depleted) { $depBtn.Content = 'Clear depleted' }
-    else { $depBtn.Content = 'Mark depleted' }
+    if ($sel.Depleted) { $depBtn.Content = 'Bo het han' }
+    else { $depBtn.Content = 'Het han' }
 }
 
 function Refresh-AccountList {
@@ -538,15 +548,21 @@ function Refresh-AccountList {
     $n = $items.Count
     $noun = 'account'
     if ($n -ne 1) { $noun = 'accounts' }
-    Set-Status ("{0} {1}. Click a row to switch now. Saved logins do not ask for a password." -f $n, $noun)
+    Set-Status ("{0} nick. Bam mot lan tren the. Cua so nay khong tat." -f $n)
 }
 
+$script:LastSwitchUtc = [datetime]::MinValue
 function Invoke-OpenSelected {
-    $sel = Get-SelectedAccount
-    if ($null -eq $sel) {
-        Set-Status 'Select an account first.'
+    $now = [datetime]::UtcNow
+    if (($now - $script:LastSwitchUtc).TotalSeconds -lt 1.5) {
         return
     }
+    $sel = Get-SelectedAccount
+    if ($null -eq $sel) {
+        Set-Status 'Chon mot the truoc.'
+        return
+    }
+    $script:LastSwitchUtc = $now
     $result = Start-CodexAccountProfile -Name $sel.Name -ParallelRoot $script:Root
     Set-Status $result.Message
     if (-not $result.Ok) {
@@ -565,10 +581,10 @@ $addBtn.Add_Click({
         $name = Show-AddAccountDialog -Owner $window
         if ([string]::IsNullOrWhiteSpace($name)) { return }
         try {
-            Set-Status 'Creating profile...'
+            Set-Status 'Dang tao nick...'
             $key = New-CodexAccountProfile -Name $name -ParallelRoot $script:Root
             Refresh-AccountList -KeepName $key
-            Set-Status ("Created {0}. Open it to sign in inside Codex (AuthSwap bootstrap)." -f $key)
+            Set-Status ("Da tao {0}. Bam the de dang nhap trong Codex (lan dau)." -f $key)
         }
         catch {
             Show-AccountNotice -Message $_.Exception.Message -Kind 'Error'
@@ -579,17 +595,17 @@ $depBtn.Add_Click({
         $sel = Get-SelectedAccount
         if ($null -eq $sel) { return }
         if (-not (Get-Command Set-CodexProfileDepleted -ErrorAction SilentlyContinue)) {
-            Show-AccountNotice -Message 'Router module missing. Re-run the installer.' -Kind 'Error'
+            Show-AccountNotice -Message 'Thieu router. Chay lai installer.' -Kind 'Error'
             return
         }
         try {
             if ($sel.Depleted) {
                 $null = Set-CodexProfileDepleted -Name $sel.Name -ParallelRoot $script:Root -Clear
-                Set-Status ("Cleared depleted on {0}." -f $sel.Name)
+                Set-Status ("Da bo het han {0}." -f $sel.Name)
             }
             else {
                 $null = Set-CodexProfileDepleted -Name $sel.Name -ParallelRoot $script:Root
-                Set-Status ("Marked {0} depleted. Next pick will skip it." -f $sel.Name)
+                Set-Status ("Da danh het han {0}." -f $sel.Name)
             }
             Refresh-AccountList -KeepName $sel.Name
         }
@@ -600,7 +616,6 @@ $depBtn.Add_Click({
 $list.Add_PreviewMouseLeftButtonUp({
         if ($null -ne $list.SelectedItem) { Invoke-OpenSelected }
     })
-$list.Add_MouseDoubleClick({ Invoke-OpenSelected })
 $list.Add_KeyDown({
         if ($_.Key -eq 'Return') {
             $_.Handled = $true

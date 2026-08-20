@@ -116,8 +116,8 @@ if (-not $SkipShortcuts) {
         -Description 'Restore main ChatGPT account and open Store Codex' -IconPath $iconPath
     New-Lnk -ShortcutPath (Join-Path $desktop 'Codex Accounts.lnk') -VbsPath $vbsAccounts -WorkingDirectory $ParallelRoot `
         -Description 'Codex Accounts - pick a ChatGPT login (one window)' -IconPath $iconPath
-    New-Lnk -ShortcutPath (Join-Path $desktop 'Codex Profiles.lnk') -VbsPath $vbsMenu -WorkingDirectory $ParallelRoot `
-        -Description 'Pick or create a Codex profile' -IconPath $iconPath
+    New-Lnk -ShortcutPath (Join-Path $desktop 'Codex Profiles.lnk') -VbsPath $vbsAccounts -WorkingDirectory $ParallelRoot `
+        -Description 'Codex Accounts - pick a login (same window as Codex Accounts)' -IconPath $iconPath
 }
 
 if (-not $SkipSkill) {
