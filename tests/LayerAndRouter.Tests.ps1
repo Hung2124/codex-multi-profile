@@ -28,6 +28,8 @@ $parallel = Join-Path $tmp 'root'
 $wsGit = Join-Path $tmp 'proj'
 $wsOther = Join-Path $tmp 'other'
 New-Item -ItemType Directory -Force -Path $wsGit, $wsOther, (Join-Path $wsGit '.git') | Out-Null
+$wsGit = (Get-Item -LiteralPath $wsGit).FullName.TrimEnd('\')
+$wsOther = (Get-Item -LiteralPath $wsOther).FullName.TrimEnd('\')
 New-FakeAuth -Dir (Join-Path $parallel 'profiles\codex1') -Email 'alt@example.com'
 New-FakeAuth -Dir (Join-Path $parallel 'profiles\codex2') -Email 'work@example.com'
 
