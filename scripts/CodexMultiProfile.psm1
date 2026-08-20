@@ -285,6 +285,19 @@ function Get-CodexRunningProcesses {
     }
 }
 
+function Get-RequiredLauncherFiles {
+    @(
+        'CodexMultiProfile.psm1',
+        'Launch-CodexProfile.ps1',
+        'Launch-CodexMain.ps1',
+        'watch-authswap-restore.ps1',
+        'CodexProfile.ps1',
+        'CodexRouter.psm1',
+        'Start-CodexLayer.ps1',
+        'layer-inject.js'
+    )
+}
+
 function Invoke-CodexDoctor {
     <#
     .SYNOPSIS
@@ -299,13 +312,7 @@ function Invoke-CodexDoctor {
         $findings.Add([pscustomobject]@{ Severity = $Severity; Code = $Code; Message = $Message })
     }
 
-    $required = @(
-        'CodexMultiProfile.psm1',
-        'Launch-CodexProfile.ps1',
-        'Launch-CodexMain.ps1',
-        'watch-authswap-restore.ps1',
-        'CodexProfile.ps1'
-    )
+    $required = @(Get-RequiredLauncherFiles)
     foreach ($name in $required) {
         $path = Join-Path $ParallelRoot $name
         if (-not (Test-Path -LiteralPath $path)) {
@@ -348,7 +355,7 @@ function Invoke-CodexDoctor {
     }
 
     if ($storeRunning.Count -gt 0 -and $cloneRunning.Count -gt 0) {
-        Add-Finding 'error' 'dual-window' 'Store Codex and a clone are both running. Close one — AuthSwap owns ~/.codex/auth.json for a single process.'
+        Add-Finding 'error' 'dual-window' 'Store Codex and a clone are both running. Close one - AuthSwap owns ~/.codex/auth.json for a single process.'
     }
 
     $configPath = Join-Path $SourceHome 'config.toml'
@@ -452,6 +459,183 @@ function Clear-StaleAuthSwapLock {
     }
 }
 
+
+function Test-CodexProfileNeedsBootstrap {
+    <#
+    .SYNOPSIS
+      True only when profile auth is missing, unreadable, or the same as main (poisoned).
+      A saved profiles\<name>\auth.json whose email differs from main does not bootstrap.
+    #>
+    param(
+        [Parameter(Mandatory)] [string]$ProfileAuthPath,
+        [Parameter(Mandatory)] [string]$MainAuthPath,
+        [string]$MainBackupPath,
+        [switch]$Force
+    )
+    if ($Force) { return $true }
+    if (-not (Test-Path -LiteralPath $ProfileAuthPath)) { return $true }
+    $profileEmail = Get-AuthEmailFromFile -Path $ProfileAuthPath
+    $mainEmail = Get-AuthEmailFromFile -Path $MainAuthPath
+    $bakEmail = 'MISSING'
+    if ($MainBackupPath -and (Test-Path -LiteralPath $MainBackupPath)) {
+        $bakEmail = Get-AuthEmailFromFile -Path $MainBackupPath
+    }
+    $ref = if ($bakEmail -ne 'MISSING') { $bakEmail } else { $mainEmail }
+    if (Test-ShouldSaveProfileAuth -ActiveEmail $profileEmail -MainBackupEmail $ref) {
+        return $false
+    }
+    return $true
+}
+
+function Stop-CodexAuthSwapWatchers {
+    <#
+    .SYNOPSIS
+      Kill AuthSwap restore watchers so a one-click switch cannot race restore-main.
+    #>
+    $killed = 0
+    Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.Name -match 'powershell|pwsh' -and
+            [string]$_.CommandLine -like '*watch-authswap-restore.ps1*'
+        } |
+        ForEach-Object {
+            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+            $killed = $killed + 1
+        }
+    return $killed
+}
+
+function Stop-CodexDesktopWindows {
+    <#
+    .SYNOPSIS
+      Close Store and clone ChatGPT/Codex windows, then poll until they are gone.
+      Does not blindly sleep 8 seconds.
+    #>
+    param(
+        [string]$ParallelRoot = (Get-CodexParallelRoot),
+        [int]$TimeoutMs = 8000,
+        [int]$PollMs = 150
+    )
+    if ($TimeoutMs -lt 1) { $TimeoutMs = 8000 }
+    if ($PollMs -lt 50) { $PollMs = 150 }
+
+    $before = @()
+    try {
+        $before = @(Get-CodexRunningProcesses -ParallelRoot $ParallelRoot | Where-Object { $_.Kind -eq 'clone' -or $_.Kind -eq 'store' })
+    }
+    catch {
+        $before = @()
+    }
+
+    foreach ($proc in $before) {
+        Stop-Process -Id $proc.Pid -Force -ErrorAction SilentlyContinue
+    }
+    Get-CimInstance Win32_Process -Filter "Name='ChatGPT.exe'" -ErrorAction SilentlyContinue |
+        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+
+    if ($before.Count -eq 0) {
+        return [pscustomobject]@{
+            Closed    = 0
+            WaitedMs  = 0
+            Remaining = 0
+            Gone      = $true
+        }
+    }
+
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $remaining = @()
+    do {
+        Start-Sleep -Milliseconds $PollMs
+        try {
+            $remaining = @(Get-CodexRunningProcesses -ParallelRoot $ParallelRoot | Where-Object { $_.Kind -eq 'clone' -or $_.Kind -eq 'store' })
+        }
+        catch {
+            $remaining = @()
+        }
+        if ($remaining.Count -eq 0) { break }
+    } while ($sw.ElapsedMilliseconds -lt $TimeoutMs)
+
+    return [pscustomobject]@{
+        Closed    = $before.Count
+        WaitedMs  = [int]$sw.ElapsedMilliseconds
+        Remaining = $remaining.Count
+        Gone      = ($remaining.Count -eq 0)
+    }
+}
+
+function Switch-CodexProfile {
+    <#
+    .SYNOPSIS
+      Close any open Codex/ChatGPT window, wait until gone, AuthSwap-launch the named profile.
+      Used by CLI (-Action switch) and later by the Accounts picker.
+    #>
+    param(
+        [Parameter(Mandatory)] [string]$Name,
+        [string]$SourceHome = (Join-Path $env:USERPROFILE '.codex'),
+        [string]$ParallelRoot = (Get-CodexParallelRoot),
+        [string]$Launcher,
+        [switch]$DryRun
+    )
+    $key = ConvertTo-ProfileKey -ProfileName $Name
+    if ($DryRun) {
+        $closed = [pscustomobject]@{ Closed = 0; WaitedMs = 0; Remaining = 0; Gone = $true }
+    }
+    else {
+        Stop-CodexAuthSwapWatchers | Out-Null
+        $closed = Stop-CodexDesktopWindows -ParallelRoot $ParallelRoot
+    }
+
+    $profileAuth = Join-Path $ParallelRoot "profiles\$key\auth.json"
+    $mainAuth = Join-Path $SourceHome 'auth.json'
+    $mainBak = Join-Path $SourceHome 'auth.json.__main__'
+    $needBootstrap = Test-CodexProfileNeedsBootstrap -ProfileAuthPath $profileAuth -MainAuthPath $mainAuth -MainBackupPath $mainBak
+
+    $launchPath = $Launcher
+    if ([string]::IsNullOrWhiteSpace($launchPath)) {
+        foreach ($cand in @(
+                (Join-Path $ParallelRoot 'Launch-CodexProfile.ps1'),
+                (Join-Path $PSScriptRoot 'Launch-CodexProfile.ps1')
+            )) {
+            if (Test-Path -LiteralPath $cand) { $launchPath = $cand; break }
+        }
+    }
+
+    $msg = if ($needBootstrap) {
+        "Switch '$key' - first login (profile auth missing or poisoned)."
+    }
+    else {
+        "Switch '$key' - AuthSwap saved login, no password prompt."
+    }
+
+    if ($DryRun) {
+        return [pscustomobject]@{
+            Action        = 'switch'
+            Profile       = $key
+            ClosedWindows = [int]$closed.Closed
+            Remaining     = [int]$closed.Remaining
+            NeedBootstrap = [bool]$needBootstrap
+            Launched      = $false
+            Launcher      = $launchPath
+            Message       = $msg
+        }
+    }
+
+    if (-not $launchPath) {
+        throw 'Missing Launch-CodexProfile.ps1. Re-run Install-CodexMultiProfile.ps1.'
+    }
+    & $launchPath -Name $key -SourceHome $SourceHome -FastSwitch
+    return [pscustomobject]@{
+        Action        = 'switch'
+        Profile       = $key
+        ClosedWindows = [int]$closed.Closed
+        Remaining     = [int]$closed.Remaining
+        NeedBootstrap = [bool]$needBootstrap
+        Launched      = $true
+        Launcher      = $launchPath
+        Message       = $msg
+    }
+}
+
 Export-ModuleMember -Function @(
     'Get-CodexMultiProfileVersion',
     'Get-CodexParallelRoot',
@@ -463,12 +647,17 @@ Export-ModuleMember -Function @(
     'Get-CodexInstallStatus',
     'Test-FileHasUtf8Bom',
     'Get-CodexRunningProcesses',
+    'Get-RequiredLauncherFiles',
     'Invoke-CodexDoctor',
     'Get-CodexPackagedScriptNames',
     'Test-CodexInstallSync',
     'Clear-StaleAuthSwapLock',
     'Test-NeedBootstrapLogin',
     'Test-ShouldSaveProfileAuth',
+    'Test-CodexProfileNeedsBootstrap',
     'Get-CodexCloneExe',
-    'New-CodexEnvCmd'
+    'New-CodexEnvCmd',
+    'Stop-CodexAuthSwapWatchers',
+    'Stop-CodexDesktopWindows',
+    'Switch-CodexProfile'
 )

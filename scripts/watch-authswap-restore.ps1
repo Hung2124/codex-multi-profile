@@ -1,5 +1,5 @@
 #Requires -Version 5.1
-# AuthSwap close watcher — never overwrite profile auth with the main account.
+# AuthSwap close watcher - never overwrite profile auth with the main account.
 param(
     [string]$ProfileKey,
     [string]$SourceHome,
@@ -7,7 +7,8 @@ param(
     [string]$MainAuth,
     [string]$MainAuthBak,
     [string]$SwapLock,
-    [string]$LogPath
+    [string]$LogPath,
+    [int]$InitialSleepSeconds = 8
 )
 
 $ErrorActionPreference = 'Continue'
@@ -37,7 +38,7 @@ function Get-MaskedEmailFallback([string]$Path) {
     return $email
 }
 
-Start-Sleep -Seconds 8
+if ($InitialSleepSeconds -gt 0) { Start-Sleep -Seconds $InitialSleepSeconds }
 while ($true) {
     $running = @(Get-CimInstance Win32_Process -Filter "Name='ChatGPT.exe'" -ErrorAction SilentlyContinue |
         Where-Object { $_.ExecutablePath -like '*CodexParallelDesktop*' -or $_.CommandLine -like "*profiles\$ProfileKey*" })
@@ -68,7 +69,7 @@ if ($shouldSave -and (Test-Path -LiteralPath $MainAuth)) {
     Write-WatchLog "saved profile auth -> $(Get-MaskedEmailFallback $MainAuth)"
 }
 else {
-    Write-WatchLog "SKIP save profile (active looks like main or invalid) — keep prev=$(Get-MaskedEmailFallback $ProfileAuth)"
+    Write-WatchLog "SKIP save profile (active looks like main or invalid) - keep prev=$(Get-MaskedEmailFallback $ProfileAuth)"
 }
 
 if (Test-Path -LiteralPath $MainAuthBak) {

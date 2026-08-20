@@ -19,6 +19,8 @@
   .\CodexProfile.ps1 -Action pool
   .\CodexProfile.ps1 -Action stick -Name codex1
   .\CodexProfile.ps1 -Action route
+  .\CodexProfile.ps1 -Action route -Force
+  .\CodexProfile.ps1 -Action switch -Name codex1
   .\CodexProfile.ps1 -Action depleted -Name codex1
   .\CodexProfile.ps1 -Action depleted -Name codex1 -Disable
   .\CodexProfile.ps1 -Action layer
@@ -28,7 +30,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut', 'status', 'verify', 'remove', 'doctor', 'processes', 'repair', 'sync-check', 'diagnostics', 'pool', 'stick', 'route', 'depleted', 'layer', 'models')]
+    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut', 'status', 'verify', 'remove', 'doctor', 'processes', 'repair', 'sync-check', 'diagnostics', 'pool', 'stick', 'route', 'switch', 'depleted', 'layer', 'models')]
     [string]$Action,
 
     [string]$Name = 'codex1',
@@ -71,7 +73,10 @@ function Get-RequiredLauncherFiles {
         'Launch-CodexProfile.ps1',
         'Launch-CodexMain.ps1',
         'watch-authswap-restore.ps1',
-        'CodexProfile.ps1'
+        'CodexProfile.ps1',
+        'CodexRouter.psm1',
+        'Start-CodexLayer.ps1',
+        'layer-inject.js'
     )
 }
 
@@ -193,7 +198,7 @@ try {
             Write-Output "Root: $($info.Root)"
             Write-Output "Shared home: $($info.SharedHome)"
             Write-Output "AuthSwap active: $(if ($info.SwapActive) { $info.SwapActive } else { '(none)' })"
-            Write-Output "Clone: $(if ($info.CloneExe) { $info.CloneExe } else { '(missing — install Codex Desktop)' })"
+            Write-Output "Clone: $(if ($info.CloneExe) { $info.CloneExe } else { '(missing - install Codex Desktop)' })"
             Write-Output "Main account: $($info.MainAccount)"
             Write-Output "Main backup: $($info.MainBackup)"
             if ($info.Profiles.Count -eq 0) {
@@ -348,7 +353,7 @@ try {
             }
             $ws = if ($Workspace) { $Workspace } else { (Get-Location).Path }
             $decision = Resolve-CodexRoute -Workspace $ws -ParallelRoot $ParallelRoot -SourceHome $SourceHome
-            if ($AsJson -and ($decision.Reason -eq 'all-depleted' -or $decision.Reason -eq 'no-profiles' -or $decision.BlockedByOpenWindow)) {
+            if ($AsJson -and ($decision.Reason -eq 'all-depleted' -or $decision.Reason -eq 'no-profiles' -or ($decision.BlockedByOpenWindow -and -not $Force))) {
                 $decision | ConvertTo-Json -Depth 5
                 if ($decision.Reason -eq 'all-depleted' -or $decision.Reason -eq 'no-profiles') { exit 4 }
                 break
@@ -359,6 +364,15 @@ try {
                 exit 4
             }
             if ($decision.BlockedByOpenWindow) {
+                if ($Force) {
+                    if ($AsJson) { $decision | ConvertTo-Json -Depth 5 }
+                    else { Write-Output ("Force switch: closing open window, then AuthSwap '{0}'." -f $decision.Profile) }
+                    if (-not (Get-Command Switch-CodexProfile -ErrorAction SilentlyContinue)) {
+                        throw 'Switch-CodexProfile missing. Re-run Install-CodexMultiProfile.ps1.'
+                    }
+                    Switch-CodexProfile -Name $decision.Profile -SourceHome $SourceHome -ParallelRoot $ParallelRoot | Out-Null
+                    break
+                }
                 if ($AsJson) { $decision | ConvertTo-Json -Depth 5; break }
                 Write-Output $decision.Message
                 break
@@ -372,6 +386,15 @@ try {
             $reliable = Join-Path $ParallelRoot 'Launch-CodexProfile.ps1'
             if (-not (Test-Path -LiteralPath $reliable)) { throw "Missing $reliable" }
             & $reliable -Name $decision.Profile -SourceHome $SourceHome
+        }
+        'switch' {
+            if (-not (Get-Command Switch-CodexProfile -ErrorAction SilentlyContinue)) {
+                throw 'Switch-CodexProfile missing. Re-run Install-CodexMultiProfile.ps1.'
+            }
+            $record = Get-ProfileRecord -ProfileName $Name
+            $plan = Switch-CodexProfile -Name $record.Key -SourceHome $SourceHome -ParallelRoot $ParallelRoot
+            if ($AsJson) { $plan | ConvertTo-Json -Depth 5; break }
+            Write-Output $plan.Message
         }
         'depleted' {
             if (-not (Get-Command Set-CodexProfileDepleted -ErrorAction SilentlyContinue)) {
