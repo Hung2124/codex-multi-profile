@@ -1,8 +1,8 @@
 #Requires -Version 5.1
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $repo 'scripts\CodexMultiProfile.psm1') -Force
 Import-Module (Join-Path $repo 'scripts\CodexRouter.psm1') -Force
+Import-Module (Join-Path $repo 'scripts\CodexMultiProfile.psm1') -Force
 
 function ConvertTo-Base64Url([string]$Text) {
     [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($Text)).TrimEnd('=').Replace('+', '-').Replace('/', '_')
@@ -136,5 +136,64 @@ $pack = @(Get-CodexPackagedScriptNames)
 foreach ($need in @('CodexRouter.psm1', 'Start-CodexLayer.ps1', 'layer-inject.js')) {
     if ($pack -notcontains $need) { throw "Get-CodexPackagedScriptNames missing $need" }
 }
+if ($pack -contains 'Show-CodexAccountApp.ps1') {
+    throw 'this branch must not package Show-CodexAccountApp.ps1 yet'
+}
 
-Write-Output 'OK: sticky, LRU, depleted failover, no BOM, masked email, models, layer-off-by-default.'
+$req = @(Get-RequiredLauncherFiles)
+foreach ($need in @('CodexRouter.psm1', 'Start-CodexLayer.ps1', 'layer-inject.js')) {
+    if ($req -notcontains $need) { throw "Get-RequiredLauncherFiles missing $need" }
+}
+
+if (-not (Get-Command Switch-CodexProfile -ErrorAction SilentlyContinue)) {
+    throw 'Switch-CodexProfile missing'
+}
+if (-not (Get-Command Stop-CodexDesktopWindows -ErrorAction SilentlyContinue)) {
+    throw 'Stop-CodexDesktopWindows missing'
+}
+
+$home = Join-Path $tmp 'home'
+New-FakeAuth -Dir $home -Email 'main@example.com'
+$savedAuth = Join-Path $parallel 'profiles\codex1\auth.json'
+if (Test-CodexProfileNeedsBootstrap -ProfileAuthPath $savedAuth -MainAuthPath (Join-Path $home 'auth.json')) {
+    throw 'valid profile auth must not bootstrap'
+}
+$missingAuth = Join-Path $tmp 'no-such-profile\auth.json'
+if (-not (Test-CodexProfileNeedsBootstrap -ProfileAuthPath $missingAuth -MainAuthPath (Join-Path $home 'auth.json'))) {
+    throw 'missing profile auth must bootstrap'
+}
+New-FakeAuth -Dir (Join-Path $tmp 'poison') -Email 'main@example.com'
+if (-not (Test-CodexProfileNeedsBootstrap -ProfileAuthPath (Join-Path $tmp 'poison\auth.json') -MainAuthPath (Join-Path $home 'auth.json'))) {
+    throw 'poisoned profile auth (same as main) must bootstrap'
+}
+
+$plan = Switch-CodexProfile -Name 'codex1' -SourceHome $home -ParallelRoot $parallel -DryRun
+if ($plan.Profile -ne 'codex1') { throw "switch name $($plan.Profile)" }
+if ($plan.NeedBootstrap) { throw 'switch dry-run must not bootstrap saved auth' }
+if ($plan.Launched) { throw 'dry-run must not launch ChatGPT.exe' }
+if ($plan.Action -ne 'switch') { throw 'switch action' }
+
+$planMissing = Switch-CodexProfile -Name 'brand-new' -SourceHome $home -ParallelRoot $parallel -DryRun
+if (-not $planMissing.NeedBootstrap) { throw 'switch of unsaved profile should bootstrap' }
+if ($planMissing.Launched) { throw 'missing-auth dry-run must not launch' }
+
+foreach ($rel in @(
+        'scripts\CodexMultiProfile.psm1',
+        'scripts\Launch-CodexProfile.ps1',
+        'scripts\CodexProfile.ps1',
+        'scripts\watch-authswap-restore.ps1',
+        'SKILL.md'
+    )) {
+    Assert-NoBom (Join-Path $repo $rel)
+}
+
+$skill = Get-Content -LiteralPath (Join-Path $repo 'SKILL.md') -Raw -Encoding UTF8
+if ($skill -match 'User wants a safe log') { throw 'SKILL.md still has duplicate item 7' }
+if ($skill -notmatch '-Action switch') { throw 'SKILL.md missing switch command' }
+if ($skill -notmatch '-Action pool') { throw 'SKILL.md missing pool' }
+if ($skill -notmatch '-Action models') { throw 'SKILL.md missing models' }
+
+$profileSrc = Get-Content -LiteralPath (Join-Path $repo 'scripts\CodexProfile.ps1') -Raw -Encoding UTF8
+if ($profileSrc -notmatch "ValidateSet\(.*'switch'") { throw 'CodexProfile.ps1 missing switch action' }
+
+Write-Output 'OK: sticky, LRU, depleted failover, no BOM, masked email, models, layer-off-by-default, switch, no-bootstrap-if-saved.'
