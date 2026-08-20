@@ -88,7 +88,33 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Ac
 7. "Stuck on secondary account / stale lock" → `-Action repair` (close clones first).
 8. "Bug report" → `-Action diagnostics` or `Redact-LaunchTrace.ps1`.
 7. User wants a safe log for GitHub → `Redact-LaunchTrace.ps1`.
+## Router (opt-in, one window)
+
+Windows counterpart of b-nnett/codex-subscription-router **routing**, still AuthSwap (one `auth.json`).
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action pool
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action stick -Name codex1
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action route
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action depleted -Name codex1
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action depleted -Name codex1 -Disable
+```
+
+New work -> least-recently-used non-depleted profile. Same git repo -> sticky. Depleted owner -> failover. All depleted -> one message. If a Codex window is open, print the choice (do not launch a second window).
+
+Layer and ChatGPT Web models are **off by default**:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action layer
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action layer -Disable
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action models
+powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action models -Disable
+```
+
+Layer targets the cloned ChatGPT.exe only. Models only write `config.toml` (no BOM); this repo does not log into chatgpt.com.
+
 ## Poisoned profile auth
+
 
 If the user opens **Codex Main** while a profile is still running, restore can write the **main** token into `profiles\<name>\auth.json`.
 
