@@ -13,7 +13,9 @@ Set-StrictMode -Version Latest
 
 $core = Join-Path $PSScriptRoot 'CodexMultiProfile.psm1'
 if (Test-Path -LiteralPath $core) {
-    Import-Module $core -Force
+    # -Global so core exports stay in the caller after this module loads.
+    # -Force here would unload a globally imported core and nest it, hiding New-CodexEnvCmd.
+    Import-Module $core -Global
 }
 
 function ConvertTo-PlainHashtable {

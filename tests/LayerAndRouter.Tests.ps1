@@ -1,8 +1,8 @@
 #Requires -Version 5.1
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $repo 'scripts\CodexMultiProfile.psm1') -Force
 Import-Module (Join-Path $repo 'scripts\CodexRouter.psm1') -Force
+Import-Module (Join-Path $repo 'scripts\CodexMultiProfile.psm1') -Force
 
 function ConvertTo-Base64Url([string]$Text) {
     [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($Text)).TrimEnd('=').Replace('+', '-').Replace('/', '_')
