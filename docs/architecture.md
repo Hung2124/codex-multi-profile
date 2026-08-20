@@ -67,7 +67,7 @@ Still one window. See [router.md](router.md).
 ## Optional layer / models
 
 Layer: loopback into the cloned ChatGPT.exe only ([layer.md](layer.md)).
-Models: marked block in `~/.codex/config.toml` pointing at a local bridge. No chatgpt.com login here.
+Models: marked block in `~/.codex/config.toml` pointing at a local Responses bridge on 127.0.0.1. No chatgpt.com login and no named companion app.
 
 ## Files (0.2.0)
 
