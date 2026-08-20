@@ -410,7 +410,7 @@ try {
                 Write-Output ("Wrote ChatGPT Web model block to {0} (UTF-8 no BOM)." -f $result.Path)
                 Write-Output ("Models: {0}" -f ($result.Models -join ', '))
                 Write-Output ("Bridge: {0}" -f $result.BridgeUrl)
-                Write-Output 'This repo does not log you into chatgpt.com. Start a local bridge (e.g. miuuyy/codex-chatgpt-web) separately.'
+                Write-Output 'This repo does not log you into chatgpt.com. Point BridgeUrl at a local Responses bridge you already run on 127.0.0.1.'
             }
             else {
                 Write-Output ("Removed ChatGPT Web model block from {0}." -f $result.Path)
