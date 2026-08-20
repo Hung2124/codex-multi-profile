@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <strong>Two or more authorized ChatGPT logins on Codex Desktop for Windows.<br>One shared workspace. One window (AuthSwap).</strong>
+  <strong>One Windows app to see and pick your ChatGPT accounts in Codex Desktop.<br>One shared workspace. One window (AuthSwap).</strong>
 </p>
 
 <p align="center">
@@ -25,9 +25,17 @@
 
 > Unofficial helper. Not affiliated with OpenAI. Needs [Codex Desktop](https://chatgpt.com/codex) from the Microsoft Store.
 
+## Pick an account
+
+After install, open **Codex Accounts** on the Desktop. That is the product: a dark account list (name, masked email, last-used, depleted, sticky paths). Click a row or press Enter to launch that login via AuthSwap.
+
+If a Codex window is already open, the app **closes it** and switches to the saved login. No password prompt when `auth.json` is present and not poisoned. First-run sign-in still happens inside Codex (this app does not collect a ChatGPT login).
+
+Agents keep using the CLI: `pool` / `stick` / `route` / `depleted`.
+
 ## Install
 
-One command. It downloads this repo and runs the Windows installer (AuthSwap + subscription router):
+One command. It downloads this repo and runs the Windows installer (AuthSwap + Codex Accounts):
 
 ```powershell
 irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.ps1 | iex
@@ -36,7 +44,7 @@ irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.
 Until 0.2.0 is merged, that `main` URL still installs 0.1.4. Use the PR branch:
 
 ```powershell
-irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/feature/v0.2.0-layer-router-models/install.ps1 | iex
+irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/feature/windows-codex-accounts-app/install.ps1 | iex
 ```
 
 That is the Windows counterpart of [b-nnett/codex-subscription-router](https://github.com/b-nnett/codex-subscription-router#install) `curl | bash` -- **without** patching ChatGPT.exe or unpacking `app.asar`.
@@ -49,9 +57,10 @@ That is the Windows counterpart of [b-nnett/codex-subscription-router](https://g
 
 | Shortcut | What it does |
 |:---|:---|
-| **Codex1** | Secondary ChatGPT login (first run asks you to sign in) |
+| **Codex Accounts** | See every login. Click / Enter to open that profile |
+| **Codex1** | Jump straight to the first secondary account |
 | **Codex Main** | Restore the original account and open Store Codex |
-| **Codex Profiles** | List / create another profile |
+| **Codex Profiles** | Legacy text picker |
 
 **Rule:** close one Codex UI before opening the other.
 
@@ -73,6 +82,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action pool
 ```
 
 ## Routing
+
+**Humans:** open **Codex Accounts**. **Agents:** `CodexProfile.ps1 -Action route` (and `pool` / `stick` / `depleted`).
 
 Windows routing in the spirit of b-nnett/codex-subscription-router. Still **one** Codex window because AuthSwap uses a single `~\.codex\auth.json`. Full table: [docs/router.md](docs/router.md).
 
@@ -140,6 +151,7 @@ $m    = "$root\CodexProfile.ps1"
 
 | Goal | Command |
 |:---|:---|
+| Open the account picker | `...\Show-CodexAccountApp.ps1` (or `-Action accounts`) |
 | Open secondary account | `...\Launch-CodexProfile.ps1 -Name codex1` |
 | Restore main + Store app | `...\Launch-CodexMain.ps1` |
 | Create `codex2` | `-Action new -Name codex2` |
@@ -211,7 +223,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Uninstall-CodexMul
 
 | Doc | Topic |
 |:---|:---|
-| [Router](docs/router.md) | pool / stick / route / depleted |
+| [Router](docs/router.md) | Codex Accounts app + pool / stick / route / depleted |
 | [Layer](docs/layer.md) | Optional clone-only desktop tweaks |
 | [Architecture](docs/architecture.md) | Why AuthSwap exists |
 | [Troubleshooting](docs/troubleshooting.md) | Wrong account, locks, BOM |
