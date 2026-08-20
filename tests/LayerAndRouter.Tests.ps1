@@ -133,7 +133,7 @@ if ($after -notmatch 'model = "gpt"') { throw 'disable must keep other config' }
 Assert-NoBom $cfg
 
 $pack = @(Get-CodexPackagedScriptNames)
-foreach ($need in @('CodexRouter.psm1', 'Start-CodexLayer.ps1', 'layer-inject.js')) {
+foreach ($need in @('CodexRouter.psm1', 'Start-CodexLayer.ps1', 'layer-inject.js', 'Show-CodexAccountApp.ps1')) {
     if ($pack -notcontains $need) { throw "Get-CodexPackagedScriptNames missing $need" }
 }
 
