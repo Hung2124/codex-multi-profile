@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 # AuthSwap close watcher — never overwrite profile auth with the main account.
 param(
     [string]$ProfileKey,
