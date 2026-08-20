@@ -100,14 +100,15 @@ function Get-CodexWorkspaceKey {
     while ($cursor) {
         $git = Join-Path $cursor '.git'
         if (Test-Path -LiteralPath $git) {
-            return $cursor.TrimEnd('\')
+            $item = Get-Item -LiteralPath $cursor
+            return $item.FullName.TrimEnd('\')
         }
         $parent = Split-Path -Parent $cursor
         if ([string]::IsNullOrWhiteSpace($parent) -or $parent -eq $cursor) { break }
         $cursor = $parent
     }
     if (Test-Path -LiteralPath $dir -PathType Container) {
-        return ([System.IO.Path]::GetFullPath($dir)).TrimEnd('\')
+        return (Get-Item -LiteralPath $dir).FullName.TrimEnd('\')
     }
     return $full.TrimEnd('\')
 }
