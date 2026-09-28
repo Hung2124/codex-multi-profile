@@ -9,6 +9,9 @@
   Click / Enter closes any open Codex window, then AuthSwap-launches that
   saved profile (-FastSwitch). No second UI is left running.
 
+  "Trong Codex" toggles the opt-in in-app switcher (Accounts list in the cloned
+  Codex window's avatar menu, Ctrl+Alt+A). It reuses the same AuthSwap launcher.
+
   Device-code / chatgpt.com login is NOT implemented here. First-run still uses
   the existing AuthSwap bootstrap inside Codex.
 
@@ -236,11 +239,18 @@ function New-CodexAccountProfile {
     return $key
 }
 
+function Get-InAppSwitcherEnabled {
+    param([string]$ParallelRoot = $script:Root)
+    if (-not (Get-Command Get-CodexSwitcherState -ErrorAction SilentlyContinue)) { return $false }
+    return [bool](Get-CodexSwitcherState -ParallelRoot $ParallelRoot).Enabled
+}
+
 if ($Headless) {
     $rows = @(Get-CodexAccountAppRows -ParallelRoot $script:Root)
     $payload = [pscustomobject]@{
         ok       = $true
         ui       = $false
+        inApp    = (Get-InAppSwitcherEnabled -ParallelRoot $script:Root)
         count    = $rows.Count
         accounts = $rows
     }
@@ -443,6 +453,8 @@ $xaml = @'
         <Button x:Name="AddBtn" Style="{StaticResource GhostButton}" Content="Them nick" MinWidth="108" Margin="0,0,8,8"/>
         <Button x:Name="MainBtn" Style="{StaticResource GhostButton}" Content="Tai khoan chinh" MinWidth="132" Margin="0,0,8,8"/>
         <Button x:Name="DepletedBtn" Style="{StaticResource GhostButton}" Content="Het han" MinWidth="96" Margin="0,0,8,8"/>
+        <Button x:Name="InAppBtn" Style="{StaticResource GhostButton}" Content="Trong Codex: Tat" MinWidth="140" Margin="0,0,8,8"
+                ToolTip="Bam avatar trong Codex de doi, them, xoa nick (Ctrl+Alt+A)"/>
       </WrapPanel>
     </Grid>
     <Border Grid.Row="1" Background="#EFE6D7" Padding="28,14">
@@ -538,6 +550,7 @@ $addBtn = $window.FindName('AddBtn')
 $mainBtn = $window.FindName('MainBtn')
 $depBtn = $window.FindName('DepletedBtn')
 $refreshBtn = $window.FindName('RefreshBtn')
+$inAppBtn = $window.FindName('InAppBtn')
 
 function Set-Status([string]$Text) {
     $status.Text = $Text
@@ -604,6 +617,52 @@ function Invoke-OpenSelected {
         Show-AccountNotice -Message $result.Message -Kind 'Error'
     }
 }
+
+function Update-InAppButton {
+    if (-not (Get-Command Set-CodexSwitcherEnabled -ErrorAction SilentlyContinue)) {
+        $inAppBtn.IsEnabled = $false
+        return
+    }
+    if (Get-InAppSwitcherEnabled -ParallelRoot $script:Root) {
+        $inAppBtn.Content = 'Trong Codex: Bat'
+        $inAppBtn.Background = '#E4EDE4'
+        $inAppBtn.BorderBrush = '#3F6A4E'
+    }
+    else {
+        $inAppBtn.Content = 'Trong Codex: Tat'
+        $inAppBtn.ClearValue([System.Windows.Controls.Control]::BackgroundProperty)
+        $inAppBtn.ClearValue([System.Windows.Controls.Control]::BorderBrushProperty)
+    }
+}
+
+$inAppBtn.Add_Click({
+        try {
+            $turnOn = -not (Get-InAppSwitcherEnabled -ParallelRoot $script:Root)
+            $null = Set-CodexSwitcherEnabled -ParallelRoot $script:Root -Disable:(-not $turnOn)
+            Update-InAppButton
+            if (-not $turnOn) {
+                Set-Status 'Da tat nut doi nick trong Codex. Lan mo sau khong con nut.'
+                return
+            }
+            Set-Status 'Da bat. Trong Codex, bam avatar (goc duoi trai) de doi nick (Ctrl+Alt+A).'
+            $active = $null
+            if (Get-Command Get-CodexActiveProfileKey -ErrorAction SilentlyContinue) {
+                $active = Get-CodexActiveProfileKey -ParallelRoot $script:Root
+            }
+            if ($active) {
+                $answer = [System.Windows.MessageBox]::Show(
+                    ("Mo lai {0} ngay de co danh sach nick trong menu avatar Codex?" -f $active),
+                    'Codex Accounts', 'YesNo', 'Question')
+                if ($answer -eq 'Yes') {
+                    $result = Start-CodexAccountProfile -Name $active -ParallelRoot $script:Root
+                    Set-Status $result.Message
+                }
+            }
+        }
+        catch {
+            Show-AccountNotice -Message $_.Exception.Message -Kind 'Error'
+        }
+    })
 
 $openBtn.Add_Click({ Invoke-OpenSelected })
 $refreshBtn.Add_Click({ Refresh-AccountList -KeepName ((Get-SelectedAccount).Name) })
@@ -676,6 +735,7 @@ $window.Add_KeyDown({
         }
     })
 $window.Add_Loaded({
+        Update-InAppButton
         Refresh-AccountList
         $null = $list.Focus()
     })

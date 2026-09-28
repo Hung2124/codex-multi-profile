@@ -22,6 +22,9 @@
   .\CodexProfile.ps1 -Action depleted -Name codex1
   .\CodexProfile.ps1 -Action depleted -Name codex1 -Disable
   .\CodexProfile.ps1 -Action layer
+  .\CodexProfile.ps1 -Action switcher
+  .\CodexProfile.ps1 -Action switcher -Disable
+  .\CodexProfile.ps1 -Action switcher -Lang vi -CdpPort 9444
   .\CodexProfile.ps1 -Action models
   .\CodexProfile.ps1 -Action accounts
   .\CodexProfile.ps1 -Action stop -Name codex1
@@ -29,7 +32,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut', 'status', 'verify', 'remove', 'doctor', 'processes', 'repair', 'sync-check', 'diagnostics', 'pool', 'stick', 'route', 'depleted', 'layer', 'models', 'accounts')]
+    [ValidateSet('new', 'launch', 'list', 'stop', 'shortcut', 'status', 'verify', 'remove', 'doctor', 'processes', 'repair', 'sync-check', 'diagnostics', 'pool', 'stick', 'route', 'depleted', 'layer', 'switcher', 'models', 'accounts')]
     [string]$Action,
 
     [string]$Name = 'codex1',
@@ -39,7 +42,11 @@ param(
     [switch]$Force,
     [switch]$Disable,
     [string]$Workspace,
-    [string]$BridgeUrl = 'http://127.0.0.1:1455/v1'
+    [string]$BridgeUrl = 'http://127.0.0.1:1455/v1',
+    [ValidateSet('', 'auto', 'vi', 'en')]
+    [string]$Lang = '',
+    [ValidateRange(0, 65535)]
+    [int]$CdpPort = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -398,6 +405,25 @@ try {
             }
             else {
                 Write-Output 'Layer OFF. Launch stays set+start with no extra port flags.'
+            }
+        }
+        'switcher' {
+            if (-not (Get-Command Set-CodexSwitcherEnabled -ErrorAction SilentlyContinue)) {
+                throw 'CodexRouter.psm1 missing. Re-run Install-CodexMultiProfile.ps1.'
+            }
+            $result = Set-CodexSwitcherEnabled -ParallelRoot $ParallelRoot -Disable:$Disable -Lang $Lang -CdpPort $CdpPort
+            if ($AsJson) { $result | ConvertTo-Json -Depth 4; break }
+            if ($result.Enabled) {
+                Write-Output ("In-app account switcher ON (cloned ChatGPT.exe, loopback port {0}, language {1})." -f (Get-CodexCdpLaunchPort -ParallelRoot $ParallelRoot), $result.Lang)
+                Write-Output ("Next time a profile opens, click your avatar in Codex (or press {0}) to see and switch accounts." -f $result.Hotkey)
+                Write-Output 'Click an account to switch: Codex reopens in a few seconds on that login (AuthSwap, one window).'
+                if (Get-Command Get-CodexActiveProfileKey -ErrorAction SilentlyContinue) {
+                    $activeKey = Get-CodexActiveProfileKey -ParallelRoot $ParallelRoot
+                    if ($activeKey) { Write-Output ("Reopen {0} (Codex Accounts) to load it now." -f $activeKey) }
+                }
+            }
+            else {
+                Write-Output 'In-app account switcher OFF. Use the Codex Accounts app to switch.'
             }
         }
         'models' {

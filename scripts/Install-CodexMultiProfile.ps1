@@ -5,13 +5,18 @@
 
 .EXAMPLE
   powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-CodexMultiProfile.ps1
+
+.EXAMPLE
+  # Also turn on the in-app account switcher (pill inside the cloned Codex window)
+  powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-CodexMultiProfile.ps1 -EnableInAppSwitcher
 #>
 [CmdletBinding()]
 param(
     [string]$Name = 'codex1',
     [switch]$SkipClone,
     [switch]$SkipShortcuts,
-    [switch]$SkipSkill
+    [switch]$SkipSkill,
+    [switch]$EnableInAppSwitcher
 )
 
 $ErrorActionPreference = 'Stop'
@@ -59,6 +64,12 @@ foreach ($name in $files) {
 $versionSrc = Join-Path $RepoRoot 'VERSION'
 if (Test-Path -LiteralPath $versionSrc) {
     Copy-Item -LiteralPath $versionSrc -Destination (Join-Path $ParallelRoot 'VERSION') -Force
+}
+
+if ($EnableInAppSwitcher) {
+    Import-Module (Join-Path $ParallelRoot 'CodexRouter.psm1') -Force
+    $sw = Set-CodexSwitcherEnabled -ParallelRoot $ParallelRoot
+    Write-Output ("In-app account switcher: ON (loopback port {0}, {1} inside Codex)." -f $sw.CdpPort, $sw.Hotkey)
 }
 
 if (-not $SkipClone) {
@@ -144,6 +155,7 @@ if (Test-Path -LiteralPath (Join-Path $ParallelRoot 'VERSION')) {
 }
 Write-Output "Profile: $key"
 Write-Output "Open Desktop shortcut 'Codex Accounts' to see and pick logins."
+Write-Output "Switch without leaving Codex: 'Trong Codex' in Codex Accounts, or CodexProfile.ps1 -Action switcher"
 Write-Output "Open '$key' for the secondary account, or 'Codex Main' for the Store app."
 Write-Output "Do not run both Codex windows at the same time."
 Write-Output "Check with: CodexProfile.ps1 -Action verify"

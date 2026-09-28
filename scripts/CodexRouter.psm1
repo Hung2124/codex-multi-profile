@@ -413,6 +413,233 @@ function Set-CodexLayerEnabled {
     return (Get-CodexLayerState -ParallelRoot $ParallelRoot)
 }
 
+function Get-CodexSwitcherStatePath {
+    param([string]$ParallelRoot = (Get-CodexParallelRoot))
+    return (Join-Path $ParallelRoot 'switcher-state.json')
+}
+
+function Get-CodexSwitcherBindingName {
+    # Runtime.addBinding name shared by Start-CodexSwitcherHost.ps1 and switcher-inject.js.
+    return 'cmpSwitcherBridge'
+}
+
+function Get-CodexSwitcherState {
+    <#
+    .SYNOPSIS
+      In-app account switcher (opt-in). Off by default, like the layer.
+    #>
+    param([string]$ParallelRoot = (Get-CodexParallelRoot))
+    $path = Get-CodexSwitcherStatePath -ParallelRoot $ParallelRoot
+    $enabled = $false
+    $port = 9333
+    $lang = 'auto'
+    if (Test-Path -LiteralPath $path) {
+        $raw = Get-Content -LiteralPath $path -Raw -Encoding UTF8
+        if (-not [string]::IsNullOrWhiteSpace($raw)) {
+            $obj = $raw | ConvertFrom-Json
+            if ($obj.PSObject.Properties['enabled']) { $enabled = [bool]$obj.enabled }
+            if ($obj.PSObject.Properties['cdpPort'] -and [int]$obj.cdpPort -gt 0) { $port = [int]$obj.cdpPort }
+            if ($obj.PSObject.Properties['lang'] -and ([string]$obj.lang) -in @('auto', 'vi', 'en')) { $lang = [string]$obj.lang }
+        }
+    }
+    return [pscustomobject]@{
+        Enabled = $enabled
+        CdpPort = $port
+        Lang    = $lang
+        Hotkey  = 'Ctrl+Alt+A'
+    }
+}
+
+function Set-CodexSwitcherEnabled {
+    param(
+        [string]$ParallelRoot = (Get-CodexParallelRoot),
+        [switch]$Disable,
+        [int]$CdpPort = 0,
+        [ValidateSet('', 'auto', 'vi', 'en')] [string]$Lang = ''
+    )
+    $current = Get-CodexSwitcherState -ParallelRoot $ParallelRoot
+    $port = $current.CdpPort
+    if ($CdpPort -gt 0) { $port = $CdpPort }
+    $language = $current.Lang
+    if ($Lang) { $language = $Lang }
+    $state = [ordered]@{
+        enabled = (-not $Disable)
+        cdpPort = $port
+        lang    = $language
+        note    = 'In-app switcher: CDP 127.0.0.1 into the cloned ChatGPT.exe only. Never the Store package.'
+    }
+    $path = Get-CodexSwitcherStatePath -ParallelRoot $ParallelRoot
+    Write-Utf8NoBom -Path $path -Text (($state | ConvertTo-Json -Depth 4) + "`n")
+    return (Get-CodexSwitcherState -ParallelRoot $ParallelRoot)
+}
+
+function Get-CodexCdpLaunchPort {
+    <#
+    .SYNOPSIS
+      Loopback CDP port for the clone: layer port if the layer is on, else the
+      switcher port if the switcher is on, else 0 (plain set + start).
+    #>
+    param([string]$ParallelRoot = (Get-CodexParallelRoot))
+    $layer = Get-CodexLayerState -ParallelRoot $ParallelRoot
+    if ($layer.Enabled) { return [int]$layer.CdpPort }
+    $switcher = Get-CodexSwitcherState -ParallelRoot $ParallelRoot
+    if ($switcher.Enabled) { return [int]$switcher.CdpPort }
+    return 0
+}
+
+function Get-CodexActiveProfileKey {
+    param([string]$ParallelRoot = (Get-CodexParallelRoot))
+    $lock = Join-Path $ParallelRoot '.authswap-active'
+    if (-not (Test-Path -LiteralPath $lock)) { return $null }
+    $raw = Get-Content -LiteralPath $lock -Raw -ErrorAction SilentlyContinue
+    if ([string]::IsNullOrWhiteSpace($raw)) { return $null }
+    return $raw.Trim()
+}
+
+function Test-CodexTextHasFullEmail {
+    <#
+    .SYNOPSIS
+      True when text contains an unmasked email (anything but the ab***@ form).
+    #>
+    param([Parameter(Mandatory)] [allowemptystring()] [string]$Text)
+    foreach ($m in [regex]::Matches($Text, '[A-Za-z0-9._%+\-*]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}')) {
+        if ($m.Value -notmatch '^[^@]{0,2}\*\*\*@') { return $true }
+    }
+    return $false
+}
+
+function Get-CodexSwitcherSnapshot {
+    <#
+    .SYNOPSIS
+      State pushed into the Codex window. Masked emails only, no tokens, no paths.
+    #>
+    param(
+        [string]$ParallelRoot = (Get-CodexParallelRoot),
+        [string]$SourceHome = (Join-Path $env:USERPROFILE '.codex'),
+        [string]$ActiveProfile
+    )
+    if (-not $ActiveProfile) { $ActiveProfile = Get-CodexActiveProfileKey -ParallelRoot $ParallelRoot }
+    $state = Get-CodexRouterState -ParallelRoot $ParallelRoot
+    $switcher = Get-CodexSwitcherState -ParallelRoot $ParallelRoot
+    $rows = @(Get-CodexProfilePool -ParallelRoot $ParallelRoot -SourceHome $SourceHome)
+    $profiles = @(foreach ($row in $rows) {
+            $needsLogin = ($row.Account -in @('MISSING', 'PARSE_ERR'))
+            [ordered]@{
+                name        = [string]$row.Name
+                account     = [string]$row.Account
+                lastUsed    = $(if ($row.LastUsed) { [string]$row.LastUsed } else { $null })
+                depleted    = [bool]$row.Depleted
+                needsLogin  = $needsLogin
+                stickyCount = @($row.Stickies).Count
+                active      = ([string]$row.Name -eq [string]$ActiveProfile)
+            }
+        })
+    # Failover hint: a saved login that is not depleted and not the one in use.
+    $candidates = @($rows | Where-Object {
+            -not $_.Depleted -and [string]$_.Name -ne [string]$ActiveProfile -and ($_.Account -notin @('MISSING', 'PARSE_ERR'))
+        } | ForEach-Object { [string]$_.Name })
+    $suggestion = $null
+    if ($candidates.Count -gt 0) { $suggestion = Select-CodexLeastRecentlyUsed -Names $candidates -State $state }
+    $mainAuth = Join-Path $SourceHome 'auth.json'
+    $mainBak = Join-Path $SourceHome 'auth.json.__main__'
+    $mainRef = if (Test-Path -LiteralPath $mainBak) { $mainBak } else { $mainAuth }
+    return [ordered]@{
+        version       = (Get-CodexMultiProfileVersion)
+        active        = $ActiveProfile
+        activeAccount = (Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $mainAuth))
+        mainAccount   = (Hide-AuthEmail -Email (Get-AuthEmailFromFile -Path $mainRef))
+        suggestion    = $suggestion
+        hotkey        = $switcher.Hotkey
+        lang          = $switcher.Lang
+        profiles      = $profiles
+    }
+}
+
+function ConvertFrom-CodexSwitcherMessage {
+    <#
+    .SYNOPSIS
+      Validate one message the in-app switcher sent over the CDP binding.
+      Returns Type/Profile/Name/Value, or Error. Never trusts page input.
+    #>
+    param(
+        [Parameter(Mandatory)] [allowemptystring()] [string]$Payload,
+        [string[]]$KnownProfiles = @()
+    )
+    function New-Result([string]$Type, [string]$ProfileKey, [string]$Name, $Value, [string]$ErrorText) {
+        return [pscustomobject]@{ Type = $Type; Profile = $ProfileKey; Name = $Name; Value = $Value; Error = $ErrorText }
+    }
+    if ([string]::IsNullOrWhiteSpace($Payload)) { return (New-Result '' '' '' $null 'empty') }
+    if ($Payload.Length -gt 4096) { return (New-Result '' '' '' $null 'too-large') }
+    try { $msg = $Payload | ConvertFrom-Json } catch { return (New-Result '' '' '' $null 'bad-json') }
+    if ($null -eq $msg -or -not $msg.PSObject -or -not $msg.PSObject.Properties['type']) {
+        return (New-Result '' '' '' $null 'no-type')
+    }
+    $type = [string]$msg.type
+    $allowed = @('hello', 'refresh', 'switch', 'main', 'depleted', 'add', 'remove', 'accounts')
+    if ($allowed -notcontains $type) { return (New-Result $type '' '' $null 'unknown-type') }
+
+    $target = ''
+    if ($type -in @('switch', 'depleted', 'remove')) {
+        if (-not $msg.PSObject.Properties['profile']) { return (New-Result $type '' '' $null 'no-profile') }
+        $target = [string]$msg.profile
+        if ($target -notmatch '^[a-z0-9][a-z0-9\-]{0,63}$') { return (New-Result $type '' '' $null 'bad-profile') }
+        if ($KnownProfiles -notcontains $target) { return (New-Result $type $target '' $null 'unknown-profile') }
+    }
+    $value = $null
+    if ($type -eq 'depleted') {
+        $value = $true
+        if ($msg.PSObject.Properties['value'] -and $msg.value -is [bool]) { $value = [bool]$msg.value }
+    }
+    $name = ''
+    if ($type -eq 'add') {
+        $rawName = ''
+        if ($msg.PSObject.Properties['name']) { $rawName = [string]$msg.name }
+        if ($rawName.Length -gt 64) { return (New-Result $type '' '' $null 'bad-name') }
+        try { $name = ConvertTo-ProfileKey -ProfileName $rawName } catch { return (New-Result $type '' '' $null 'bad-name') }
+        if ($KnownProfiles -contains $name) { return (New-Result $type '' $name $null 'exists') }
+    }
+    return (New-Result $type $target $name $value '')
+}
+
+function Remove-CodexProfile {
+    <#
+    .SYNOPSIS
+      Delete one saved profile (folder with its auth.json, launchers, Desktop shortcut,
+      router entries). Refuses the profile AuthSwap currently has active. ~/.codex is never touched.
+    #>
+    param(
+        [Parameter(Mandatory)] [string]$Name,
+        [string]$ParallelRoot = (Get-CodexParallelRoot),
+        [string]$DesktopDir = ([Environment]::GetFolderPath('Desktop'))
+    )
+    $key = ConvertTo-ProfileKey -ProfileName $Name
+    $known = @(Get-CodexKnownProfileNames -ParallelRoot $ParallelRoot)
+    if ($known -notcontains $key) { throw "Unknown profile '$key'." }
+    if ((Get-CodexActiveProfileKey -ParallelRoot $ParallelRoot) -eq $key) {
+        throw "Profile '$key' is the active AuthSwap account. Switch to another profile first."
+    }
+    $running = @()
+    try { $running = @(Get-CodexRunningProcesses -ParallelRoot $ParallelRoot | Where-Object { $_.Profile -eq $key }) } catch { $running = @() }
+    if ($running.Count -gt 0) { throw "Profile '$key' is open in Codex. Close it first." }
+
+    $root = Join-Path $ParallelRoot "profiles\$key"
+    Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction Stop
+    foreach ($file in @("launch-$key.vbs", "launch-$key-env.cmd")) {
+        Remove-Item -LiteralPath (Join-Path $ParallelRoot $file) -Force -ErrorAction SilentlyContinue
+    }
+    if ($DesktopDir) {
+        $display = (Get-Culture).TextInfo.ToTitleCase($key)
+        Remove-Item -LiteralPath (Join-Path $DesktopDir "$display.lnk") -Force -ErrorAction SilentlyContinue
+    }
+    $state = Get-CodexRouterState -ParallelRoot $ParallelRoot
+    if ($state.profiles.ContainsKey($key)) { $state.profiles.Remove($key) }
+    foreach ($ws in @($state.stickies.Keys)) {
+        if ([string]$state.stickies[$ws] -eq $key) { $state.stickies.Remove($ws) }
+    }
+    Save-CodexRouterState -State $state -ParallelRoot $ParallelRoot | Out-Null
+    return [pscustomobject]@{ Name = $key; Removed = $true }
+}
+
 function Get-CodexChatGptWebModelIds {
     return @(
         'chatgpt-web/luna',
@@ -520,6 +747,16 @@ Export-ModuleMember -Function @(
     'Get-CodexProfilePool',
     'Get-CodexLayerState',
     'Set-CodexLayerEnabled',
+    'Get-CodexSwitcherStatePath',
+    'Get-CodexSwitcherBindingName',
+    'Get-CodexSwitcherState',
+    'Set-CodexSwitcherEnabled',
+    'Get-CodexCdpLaunchPort',
+    'Get-CodexActiveProfileKey',
+    'Test-CodexTextHasFullEmail',
+    'Get-CodexSwitcherSnapshot',
+    'ConvertFrom-CodexSwitcherMessage',
+    'Remove-CodexProfile',
     'Get-CodexChatGptWebModelIds',
     'Get-CodexChatGptWebModelsBlock',
     'Update-CodexChatGptWebModels',

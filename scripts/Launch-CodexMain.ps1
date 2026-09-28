@@ -25,6 +25,9 @@ if (Get-Command Stop-CodexAuthSwapWatchers -ErrorAction SilentlyContinue) {
     $n = Stop-CodexAuthSwapWatchers
     Write-LaunchLog ("stopped {0} authswap watcher(s)" -f $n)
 }
+if (Get-Command Stop-CodexSwitcherHosts -ErrorAction SilentlyContinue) {
+    $null = Stop-CodexSwitcherHosts
+}
 
 if (Test-Path -LiteralPath $swapLock) {
     $key = (Get-Content -LiteralPath $swapLock -Raw -ErrorAction SilentlyContinue).Trim()

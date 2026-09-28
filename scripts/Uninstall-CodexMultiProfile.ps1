@@ -25,7 +25,7 @@ if (-not (Test-Path -LiteralPath $root)) {
 }
 
 Get-ChildItem -LiteralPath $root -File | Where-Object {
-    $_.Extension -in '.ps1', '.psm1', '.vbs', '.cmd', '.log' -or $_.Name -in @('.authswap-active', 'VERSION')
+    $_.Extension -in '.ps1', '.psm1', '.js', '.vbs', '.cmd', '.log' -or $_.Name -in @('.authswap-active', 'VERSION')
 } | Remove-Item -Force -ErrorAction SilentlyContinue
 
 if ($PurgeProfiles) {

@@ -99,6 +99,10 @@ try {
         $killed = Stop-CodexAuthSwapWatchers
         Write-LaunchLog ("stopped {0} authswap watcher(s)" -f $killed)
     }
+    if (Get-Command Stop-CodexSwitcherHosts -ErrorAction SilentlyContinue) {
+        $hosts = Stop-CodexSwitcherHosts
+        if ($hosts -gt 0) { Write-LaunchLog ("stopped {0} in-app switcher host(s)" -f $hosts) }
+    }
     if (Test-Path -LiteralPath $swapLock) {
         $outgoing = (Get-Content -LiteralPath $swapLock -Raw -ErrorAction SilentlyContinue)
         if ($outgoing) { $outgoing = $outgoing.Trim() }
@@ -156,16 +160,37 @@ try {
     $cloneApp = Split-Path -Parent $cloneExe
     $cmdPath = Join-Path $ParallelRoot ("launch-{0}-env.cmd" -f $key)
     $cdpPort = 0
+    $layerOn = $false
+    $switcherOn = $false
     if (Get-Command Get-CodexLayerState -ErrorAction SilentlyContinue) {
-        $layerState = Get-CodexLayerState -ParallelRoot $ParallelRoot
-        if ($layerState.Enabled) { $cdpPort = [int]$layerState.CdpPort }
+        $layerOn = [bool](Get-CodexLayerState -ParallelRoot $ParallelRoot).Enabled
+    }
+    if (Get-Command Get-CodexSwitcherState -ErrorAction SilentlyContinue) {
+        $switcherOn = [bool](Get-CodexSwitcherState -ParallelRoot $ParallelRoot).Enabled
+    }
+    if (Get-Command Get-CodexCdpLaunchPort -ErrorAction SilentlyContinue) {
+        $cdpPort = [int](Get-CodexCdpLaunchPort -ParallelRoot $ParallelRoot)
+    }
+    elseif ($layerOn) {
+        $cdpPort = [int](Get-CodexLayerState -ParallelRoot $ParallelRoot).CdpPort
     }
     New-CodexEnvCmd -CmdPath $cmdPath -CodexHome $SourceHome -UserDataDir $root -CloneApp $cloneApp -CloneExe $cloneExe -RemoteDebuggingPort $cdpPort
     Start-Process -FilePath $cmdPath -WindowStyle Hidden | Out-Null
     if (Get-Command Set-CodexProfileLastUsed -ErrorAction SilentlyContinue) {
         Set-CodexProfileLastUsed -Name $key -ParallelRoot $ParallelRoot | Out-Null
     }
-    if ($cdpPort -gt 0) {
+    if ($cdpPort -gt 0 -and $switcherOn) {
+        $switcherScript = Join-Path $ParallelRoot 'Start-CodexSwitcherHost.ps1'
+        if (-not (Test-Path -LiteralPath $switcherScript)) { $switcherScript = Join-Path $PSScriptRoot 'Start-CodexSwitcherHost.ps1' }
+        if (Test-Path -LiteralPath $switcherScript) {
+            Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
+                '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', $switcherScript,
+                '-Port', "$cdpPort", '-ProfileKey', $key, '-ParallelRoot', $ParallelRoot, '-SourceHome', $SourceHome
+            ) | Out-Null
+            Write-LaunchLog ("in-app switcher host started on 127.0.0.1:{0}" -f $cdpPort)
+        }
+    }
+    if ($cdpPort -gt 0 -and $layerOn) {
         $layerScript = Join-Path $ParallelRoot 'Start-CodexLayer.ps1'
         if (-not (Test-Path -LiteralPath $layerScript)) { $layerScript = Join-Path $PSScriptRoot 'Start-CodexLayer.ps1' }
         if (Test-Path -LiteralPath $layerScript) {

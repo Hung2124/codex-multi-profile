@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 Set-StrictMode -Version Latest
 
-$script:ModuleVersion = '0.2.0'
+$script:ModuleVersion = '0.3.0'
 
 function Get-CodexMultiProfileVersion {
     $candidates = @(
@@ -356,6 +356,21 @@ function Invoke-CodexDoctor {
         Add-Finding 'warn' 'config-bom' 'config.toml has a UTF-8 BOM. Codex may ignore it. Rewrite with Write-Utf8NoBom.'
     }
 
+    $switcherState = Join-Path $ParallelRoot 'switcher-state.json'
+    if (Test-Path -LiteralPath $switcherState) {
+        $switcherOn = $false
+        try { $switcherOn = [bool]((Get-Content -LiteralPath $switcherState -Raw -Encoding UTF8 | ConvertFrom-Json).enabled) } catch { $switcherOn = $false }
+        if ($switcherOn) {
+            $missingSwitcher = @('Start-CodexSwitcherHost.ps1', 'switcher-inject.js', 'CodexRouter.psm1' | Where-Object { -not (Test-Path -LiteralPath (Join-Path $ParallelRoot $_)) })
+            if ($missingSwitcher.Count -gt 0) {
+                Add-Finding 'error' 'switcher-missing' ("In-app switcher is on but " + ($missingSwitcher -join ', ') + " is missing. Re-run Install-CodexMultiProfile.ps1.")
+            }
+            else {
+                Add-Finding 'info' 'switcher-on' 'In-app account switcher is on (cloned ChatGPT.exe only; Ctrl+Alt+A inside Codex).'
+            }
+        }
+    }
+
     $profilesRoot = Join-Path $ParallelRoot 'profiles'
     if (Test-Path -LiteralPath $profilesRoot) {
         Get-ChildItem $profilesRoot -Directory | ForEach-Object {
@@ -386,7 +401,9 @@ function Get-CodexPackagedScriptNames {
         'CodexRouter.psm1',
         'Start-CodexLayer.ps1',
         'layer-inject.js',
-        'Show-CodexAccountApp.ps1'
+        'Show-CodexAccountApp.ps1',
+        'Start-CodexSwitcherHost.ps1',
+        'switcher-inject.js'
     )
 }
 
@@ -472,6 +489,25 @@ function Stop-CodexAuthSwapWatchers {
     return $killed
 }
 
+function Stop-CodexSwitcherHosts {
+    <#
+    .SYNOPSIS
+      Kill in-app switcher hosts (hidden PowerShell bridges) before a relaunch.
+    #>
+    $killed = 0
+    Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.Name -match 'powershell|pwsh' -and
+            $_.ProcessId -ne $PID -and
+            [string]$_.CommandLine -like '*Start-CodexSwitcherHost.ps1*'
+        } |
+        ForEach-Object {
+            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+            $killed = $killed + 1
+        }
+    return $killed
+}
+
 Export-ModuleMember -Function @(
     'Get-CodexMultiProfileVersion',
     'Get-CodexParallelRoot',
@@ -491,5 +527,6 @@ Export-ModuleMember -Function @(
     'Test-ShouldSaveProfileAuth',
     'Get-CodexCloneExe',
     'New-CodexEnvCmd',
-    'Stop-CodexAuthSwapWatchers'
+    'Stop-CodexAuthSwapWatchers',
+    'Stop-CodexSwitcherHosts'
 )

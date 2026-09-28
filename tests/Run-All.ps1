@@ -13,4 +13,5 @@ $root = Split-Path -Parent $PSScriptRoot
 & (Join-Path $root 'tests\ExportDiagnostics.Tests.ps1')
 & (Join-Path $root 'tests\LayerAndRouter.Tests.ps1')
 & (Join-Path $root 'tests\AccountApp.Tests.ps1')
+& (Join-Path $root 'tests\InAppSwitcher.Tests.ps1')
 Write-Output 'OK: all tests passed.'
