@@ -303,12 +303,12 @@
     '.t-dark{--fg:#fff;--fg2:rgba(255,255,255,.7);--fg3:rgba(255,255,255,.5);--hover:rgba(255,255,255,.08);',
     '--line:rgba(255,255,255,.06);--border:rgba(255,255,255,.08);--border-heavy:rgba(255,255,255,.16);',
     '--menu-bg:rgba(45,45,45,.94);--menu-bg:oklab(0.297161 0.0000135154 0.00000594556 / 0.9);--ring:rgba(255,255,255,.082);',
-    '--surface:#282828;--btn2:rgba(255,255,255,.05);--btn2h:rgba(255,255,255,.08);--pri-bg:#fff;--pri-fg:#0d0d0d;',
+    '--veil:rgba(24,24,24,.94);--surface:#282828;--btn2:rgba(255,255,255,.05);--btn2h:rgba(255,255,255,.08);--pri-bg:#fff;--pri-fg:#0d0d0d;',
     '--danger:#ff6764;--danger-bg:#4d100e;--danger-bgh:rgba(255,103,100,.17);--warn:#ff8549;--focus:#339cff;--flash:rgba(51,156,255,.16)}',
     '.t-light{--fg:#1a1c1f;--fg2:#5d5d5d;--fg3:#8f8f8f;--hover:rgba(26,28,31,.05);',
     '--line:rgba(26,28,31,.06);--border:rgba(26,28,31,.08);--border-heavy:rgba(26,28,31,.12);',
     '--menu-bg:rgba(255,255,255,.94);--menu-bg:oklab(0.999994 0.0000455678 0.0000200868 / 0.9);--ring:rgba(26,28,31,.08);',
-    '--surface:#fff;--btn2:rgba(26,28,31,.05);--btn2h:rgba(26,28,31,.08);--pri-bg:#1a1c1f;--pri-fg:#fff;',
+    '--veil:rgba(250,250,250,.94);--surface:#fff;--btn2:rgba(26,28,31,.05);--btn2h:rgba(26,28,31,.08);--pri-bg:#1a1c1f;--pri-fg:#fff;',
     '--danger:#ba2623;--danger-bg:#ffd9d9;--danger-bgh:rgba(186,38,35,.17);--warn:#923b0f;--focus:#0068c7;--flash:rgba(0,104,199,.1)}'
   ].join('\n');
 
@@ -370,6 +370,8 @@
     '.backdrop{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:16px;',
     'background:rgba(0,0,0,.45);-webkit-app-region:no-drag;animation:fade .14s ease-out}',
     '@keyframes fade{from{opacity:0}to{opacity:1}}',
+    /* switching: cover the whole window, Codex shows its own error screen while the login changes under it */
+    '.backdrop.veil{background:var(--veil);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);animation:fade .12s ease-out}',
     '.dlg{width:min(400px,100%);padding:16px;border-radius:16px;border:.5px solid var(--border);background:var(--surface);color:var(--fg);',
     'box-shadow:0 0 0 .5px var(--border),0 8px 16px -4px rgba(0,0,0,.12),0 16px 32px -8px rgba(0,0,0,.19);outline:none;',
     'animation:enter .14s cubic-bezier(.2,0,0,1)}',
@@ -855,7 +857,7 @@
 
   function renderSwitching() {
     var sw = S.switching;
-    return h('div', { class: 'backdrop', role: 'alert', 'aria-live': 'assertive' }, [
+    return h('div', { class: 'backdrop veil', role: 'alert', 'aria-live': 'assertive' }, [
       h('div', { class: 'card' }, [h('span', { class: 'spin' }), h('div', {}, [
         h('div', { class: 't1', text: sw.add ? t('switchingAdd', { name: sw.profile }) : t('switching', { name: sw.profile }) }),
         h('div', { class: 't2', text: t('switchingSub') })])])
@@ -941,6 +943,38 @@
     }
   }
 
+  /* While the app-server restarts Codex swaps its whole UI for an error screen (no avatar button) for about a
+     second. Keep the veil until the avatar is back and steady, so that screen is never seen. */
+  function settleSwitch(evt) {
+    var started = Date.now();
+    var sawMissing = false, steady = 0;
+    S.modal = null;
+    // The host confirmed the switch: no "did not finish" warning from here on, only the wait for Codex's UI.
+    clearTimeout(S.switchTimer);
+    var finish = function () {
+      clearTimeout(S.switchTimer);
+      S.switching = null;
+      S.trigger = findTrigger();
+      if (!evt.add) {
+        S.flash = evt.profile; S.flashUntil = Date.now() + 2500;
+        refreshSections();
+        showToast('info', t('toast_switched', { detail: evt.profile }));
+      }
+      render();
+    };
+    var tick = function () {
+      if (!S.switching) { return; }
+      // A hidden window has no layout (the avatar cannot be seen) and runs timers late: wait until it is shown.
+      if (document.visibilityState !== 'visible') { started = Date.now(); steady = 0; setTimeout(tick, 300); return; }
+      var elapsed = Date.now() - started;
+      var ok = !!findTrigger();
+      if (!ok) { sawMissing = true; steady = 0; } else { steady += 1; }
+      if (evt.add || elapsed > 8000 || (ok && steady >= 2 && elapsed >= 400 && (sawMissing || elapsed >= 1500))) { finish(); return; }
+      setTimeout(tick, 150);
+    };
+    tick();
+  }
+
   /* ---------- host -> page ---------- */
   function receive(evt) {
     if (!evt || typeof evt !== 'object') { return; }
@@ -951,16 +985,8 @@
     } else if (evt.kind === 'switching') {
       if (!S.switching) { beginSwitching(evt.profile || '', !!evt.add); }
     } else if (evt.kind === 'switched') {
-      // Fast switch: the window stayed, Codex picked the new login up by itself.
-      clearTimeout(S.switchTimer);
-      S.switching = null;
-      S.modal = null;
-      if (!evt.add) {
-        S.flash = evt.profile; S.flashUntil = Date.now() + 2500;
-        refreshSections();
-        showToast('info', t('toast_switched', { detail: evt.profile }));
-      }
-      render();
+      // Fast switch: the window stayed and Codex is reconnecting to its new app-server.
+      settleSwitch(evt);
     } else if (evt.kind === 'toast') {
       var code = String(evt.code || '');
       var detail = evt.detail || '';

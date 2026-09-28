@@ -391,7 +391,12 @@ function Invoke-AccountsHost {
             if ($fresh.Count -gt 0) {
                 if (-not (Test-CdpOwnerIsStoreCodex)) { Write-HostLog 'REFUSED: the CDP port is not owned by the Store Codex'; break }
                 foreach ($t in $fresh) {
-                    try { [void]$conns.Add((Connect-CdpTarget -Target $t -Source $source)); Write-HostLog ("attached {0}" -f $t.id) }
+                    try {
+                        $c = Connect-CdpTarget -Target $t -Source $source
+                        [void]$conns.Add($c)
+                        Write-HostLog ("attached {0}" -f $t.id)
+                        Send-PageState @($c)
+                    }
                     catch { Write-HostLog ("attach failed: " + $_.Exception.Message) }
                 }
             }
@@ -400,6 +405,9 @@ function Invoke-AccountsHost {
         # Only when auth.json or the account store changed (token refresh, sign-in, CLI edits).
         if (($now - $lastSync).TotalSeconds -ge 3) {
             $lastSync = $now
+            # Safety net: normal use stays around 150 MB. Whatever went wrong, never weigh on the PC.
+            $mem = [System.Diagnostics.Process]::GetCurrentProcess().WorkingSet64
+            if ($mem -gt 500MB) { Write-HostLog ("helper memory {0} MB, exiting to stay light" -f [int]($mem / 1MB)); break }
             $fingerprint = Get-StoreFingerprint
             if ($fingerprint -ne $lastFingerprint) {
                 $lastFingerprint = $fingerprint
@@ -425,11 +433,16 @@ function Invoke-AccountsHost {
         if ($text.Contains('"Page.domContentEventFired"')) {
             # Codex reloaded its window. Without Runtime.enable the binding is not carried into the new
             # page by itself; re-adding it does (the script itself comes back via addScriptToEvaluateOnNewDocument).
+            # The new-document script is sometimes missing after the first reload; evaluate it too (it guards
+            # against running twice), so the menu is always back.
             try {
                 Send-CdpMessage -Conn $conn -Method 'Runtime.removeBinding' -Params @{ name = $binding }
                 Send-CdpMessage -Conn $conn -Method 'Runtime.addBinding' -Params @{ name = $binding }
+                Send-CdpMessage -Conn $conn -Method 'Runtime.evaluate' -Params @{ expression = $source; returnByValue = $true }
             }
             catch { }
+            # Do not wait for the page's hello: a hidden window runs its timers very late.
+            try { Send-PageState @($conn) } catch { }
             continue
         }
         # Replies to our own commands are skipped without parsing; only the page's requests matter.
