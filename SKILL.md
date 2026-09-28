@@ -41,6 +41,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $cli remove -Name old
 
 - Never print or copy tokens; emails are shown masked (`ab***@domain`).
 - Do not use Codex's own **Log out** to change accounts: it can invalidate that login's saved copy. Use the menu.
-- The menu only appears when Codex was opened from the **Codex** shortcut (the original Store icon starts
-  Codex without the DevTools port). `status` says which one is running.
+- A watcher (`CodexAccountsWatcher.exe`, HKCU Run) starts the helper whenever the Store Codex runs without it; from the
+  original icon Codex restarts once to get the menu. `status` says whether the menu is attached.
+- Usage bars come from `chatgpt.com/backend-api/wham/usage` with each saved account's own token (numbers only reach
+  the page).
 - Log: `%LOCALAPPDATA%\CodexMultiProfile\codex-accounts.log` (masked).

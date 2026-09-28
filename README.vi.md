@@ -25,6 +25,7 @@ Bấm avatar ở góc dưới bên trái Codex. Ngay dưới tên bạn có mụ
 | Bút chì / thùng rác (rê chuột vào dòng) | Đổi tên / xoá tài khoản đã lưu (không xoá được tài khoản đang dùng) |
 | Phím `1`-`9` khi menu đang mở | Chọn tài khoản theo số |
 | `Ctrl+Alt+A` | Mở menu từ bất kỳ đâu trong Codex |
+| Thanh mức sử dụng | Dưới mỗi tài khoản: phần còn lại của các giới hạn (5h và Tuần với gói trả phí, Tháng với gói free), xanh / vàng / đỏ; rê chuột để xem giờ đặt lại. Cập nhật khi mở menu (tối đa 1 lần/phút) |
 | Thẻ hết lượt | Khi Codex báo hết giới hạn sử dụng, gợi ý chuyển sang tài khoản kế tiếp |
 
 Menu theo ngôn ngữ của Codex (Việt/Anh) và theo giao diện sáng/tối.
@@ -37,8 +38,10 @@ Cần Windows 10/11, [Codex](https://chatgpt.com/codex) từ Microsoft Store, đ
 irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.ps1 | iex
 ```
 
-Trình cài đặt lưu tài khoản Codex đang dùng thành `main` và tạo shortcut **Codex** trên Desktop và Start menu.
-**Hãy mở Codex bằng shortcut đó** (ghim nó lên taskbar thay cho icon Codex gốc): icon gốc mở Codex không có menu tài khoản.
+Trình cài đặt lưu tài khoản Codex đang dùng thành `main`, tạo shortcut **Codex** trên Desktop và Start menu, và bật một
+trình theo dõi siêu nhẹ chạy cùng Windows (~25 MB, không có cửa sổ). Mở Codex kiểu nào cũng được: từ icon gốc trên
+taskbar / Start thì Codex tự khởi động lại một lần trong vài giây đầu để có menu; từ shortcut **Codex** thì có menu ngay
+(ghim shortcut này để khỏi phải khởi động lại). `-NoAutoStart` để không dùng trình theo dõi.
 
 Nâng cấp từ bản cũ dùng clone (shortcut Codex1 / Codex Main / Codex Accounts)? Lệnh này nhập các tài khoản
 đã lưu, xoá bản cũ và các bản sao `ChatGPT.exe`:

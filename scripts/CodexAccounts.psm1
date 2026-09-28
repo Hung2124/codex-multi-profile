@@ -536,6 +536,58 @@ function Get-CodexAccountsSettings {
     return [pscustomobject]@{ CdpPort = $port; Lang = $lang }
 }
 
+function ConvertFrom-CodexUsageJson {
+    <#
+    .SYNOPSIS
+      Usage windows from chatgpt.com/backend-api/wham/usage: label (5h / week / month / Nd / Nh),
+      percent used, reset time (unix seconds), and whether a limit is reached. Numbers only.
+    #>
+    param([Parameter(Mandatory)] [string]$Json)
+    $u = ConvertFrom-Json -InputObject $Json
+    $rl = $null
+    if ($u.PSObject.Properties['rate_limit']) { $rl = $u.rate_limit }
+    $windows = @()
+    if ($rl) {
+        foreach ($name in @('primary_window', 'secondary_window')) {
+            if (-not $rl.PSObject.Properties[$name] -or -not $rl.$name) { continue }
+            $w = $rl.$name
+            $secs = [int64]$w.limit_window_seconds
+            # if/elseif, not switch: a PowerShell switch returns every matching branch (604800 -> week AND 7d).
+            if ($secs -eq 18000) { $label = '5h' }
+            elseif ($secs -eq 604800) { $label = 'week' }
+            elseif ($secs -ge 2419200 -and $secs -le 2678400) { $label = 'month' }
+            elseif ($secs -ge 86400) { $label = '{0}d' -f [int]($secs / 86400) }
+            else { $label = '{0}h' -f [Math]::Max(1, [int]($secs / 3600)) }
+            $used = [int][Math]::Round([double]$w.used_percent)
+            $windows += [ordered]@{
+                label   = $label
+                used    = [Math]::Min(100, [Math]::Max(0, $used))
+                resetAt = $(if ($w.PSObject.Properties['reset_at']) { [int64]$w.reset_at } else { $null })
+            }
+        }
+    }
+    $reached = [bool]($rl -and $rl.PSObject.Properties['limit_reached'] -and $rl.limit_reached)
+    return [ordered]@{ windows = $windows; limitReached = $reached }
+}
+
+function New-CodexUsageRequest {
+    <#
+    .SYNOPSIS
+      HTTP request for one saved account's usage (sent only to chatgpt.com, like Codex itself does).
+    #>
+    param([Parameter(Mandatory)] [string]$AuthPath)
+    Add-Type -AssemblyName System.Net.Http
+    $j = Get-Content -LiteralPath $AuthPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $token = [string]$j.tokens.access_token
+    if (-not $token) { return $null }
+    $id = Get-AuthIdentity -Path $AuthPath
+    $req = New-Object System.Net.Http.HttpRequestMessage([System.Net.Http.HttpMethod]::Get, 'https://chatgpt.com/backend-api/wham/usage')
+    $req.Headers.Authorization = New-Object System.Net.Http.Headers.AuthenticationHeaderValue('Bearer', $token)
+    if ($id -and $id.AccountId) { [void]$req.Headers.TryAddWithoutValidation('ChatGPT-Account-Id', $id.AccountId) }
+    [void]$req.Headers.TryAddWithoutValidation('User-Agent', 'codex-multi-profile')
+    return $req
+}
+
 function Get-CodexSwitcherSnapshot {
     <#
     .SYNOPSIS
@@ -544,23 +596,33 @@ function Get-CodexSwitcherSnapshot {
     param(
         [string]$Root = (Get-CodexAccountsRoot),
         [string]$CodexHome = (Get-CodexHome),
-        [string]$Pending = ''
+        [string]$Pending = '',
+        # name -> ConvertFrom-CodexUsageJson result (optional)
+        [hashtable]$Usage = @{}
     )
     $accounts = @(Get-CodexAccounts -Root $Root)
     $active = Get-CodexActiveAccount -Root $Root -CodexHome $CodexHome
     $activeName = $(if ($active) { $active.Name } else { $null })
+    $out = @{}
     $profiles = @(foreach ($a in $accounts) {
+            $u = $Usage[$a.Name]
+            # Via a variable: $( @(x) ) would unroll a one-window list (free plan: month only) into a plain object.
+            $windows = $null
+            if ($u) { $windows = [object[]]@($u.windows) }
+            $isOut = [bool]$a.Depleted -or [bool]($u -and $u.limitReached)
+            $out[$a.Name] = $isOut
             [ordered]@{
                 name       = $a.Name
                 account    = (Hide-AuthEmail -Email $a.Email)
                 plan       = $a.Plan
-                depleted   = $a.Depleted
+                depleted   = $isOut
                 needsLogin = (-not $a.Email)
                 active     = ($a.Name -eq $activeName)
+                usage      = $windows
             }
         })
     # Usage-limit hint: least recently used saved account that is not out of quota.
-    $next = @($accounts | Where-Object { $_.Name -ne $activeName -and -not $_.Depleted -and $_.Email } | Sort-Object LastUsed | Select-Object -First 1)
+    $next = @($accounts | Where-Object { $_.Name -ne $activeName -and -not $out[$_.Name] -and $_.Email } | Sort-Object LastUsed | Select-Object -First 1)
     $settings = Get-CodexAccountsSettings -Root $Root
     return [ordered]@{
         version    = (Get-CodexMultiProfileVersion)

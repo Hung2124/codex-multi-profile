@@ -84,6 +84,23 @@ try {
     Assert ($null -eq $snap.suggestion) 'no suggestion when the only other account is out of quota'
     Assert (Test-CodexTextHasFullEmail -Text 'x alice@example.com') 'full email detected'
 
+    # --- usage bars: /wham/usage parsing, depleted when a limit is reached, numbers only in the snapshot
+    $plus = '{"plan_type":"plus","rate_limit":{"allowed":true,"limit_reached":false,"primary_window":{"used_percent":12.6,"limit_window_seconds":18000,"reset_after_seconds":900,"reset_at":1790645148},"secondary_window":{"used_percent":6,"limit_window_seconds":604800,"reset_after_seconds":4000,"reset_at":1791050947}}}'
+    $free = '{"plan_type":"free","rate_limit":{"allowed":false,"limit_reached":true,"primary_window":{"used_percent":100,"limit_window_seconds":2592000,"reset_after_seconds":5,"reset_at":1793219149},"secondary_window":null}}'
+    $up = ConvertFrom-CodexUsageJson -Json $plus
+    Assert ($up.windows.Count -eq 2 -and $up.windows[0].label -eq '5h' -and $up.windows[0].used -eq 13 -and $up.windows[1].label -eq 'week') 'plus: 5h + week windows'
+    Assert (-not $up.limitReached) 'plus: not limited'
+    Assert (($up.windows[1].label -is [string]) -and ($up.windows[1].label -ceq 'week')) 'one label per window (switch returned week AND 7d once)'
+    $uf = ConvertFrom-CodexUsageJson -Json $free
+    Assert ($uf.windows.Count -eq 1 -and $uf.windows[0].label -eq 'month' -and $uf.limitReached) 'free: month window, limit reached'
+    $snapU = Get-CodexSwitcherSnapshot -Root $R -CodexHome $H -Usage @{ main = $up; job = $uf }
+    $pj = @($snapU.profiles | Where-Object { $_.name -eq 'job' })[0]
+    $pm = @($snapU.profiles | Where-Object { $_.name -eq 'main' })[0]
+    Assert ($pm.usage.Count -eq 2 -and $pj.depleted) 'usage in snapshot; limit reached shows as out of quota'
+    Assert (($snapU | ConvertTo-Json -Depth 8 -Compress) -match '"name":"job"[^}]*?"usage":\[') 'a one-window plan still reaches the page as a list'
+    Assert ((($snapU | ConvertTo-Json -Depth 8 -Compress)) -notmatch 'token|Bearer') 'usage snapshot carries no tokens'
+    Assert ($null -eq (New-CodexUsageRequest -AuthPath (Join-Path $tmp 'other.json')).Content) 'usage request has no body'
+
     Remove-CodexAccount -Name 'job' -Root $R -CodexHome $H
     Assert (@(Get-CodexAccounts -Root $R).Count -eq 1) 'removed'
 

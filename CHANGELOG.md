@@ -17,6 +17,11 @@ replaces the unreleased 0.3.0 clone-based in-app switcher.
 - Live token sync: the `auth.json` Codex refreshes is copied back into the account in use, so saved logins do not go stale
 - Any new login seen while Codex runs is saved automatically; a login that is not saved is never removed
 - Menu language follows Codex (`<html lang>`), Vietnamese or English
+- **Usage bars** under every account (5h / week on paid plans, month on free), from `/wham/usage` with that
+  account's own token, non-blocking; hover shows the reset time
+- **Watcher** at sign-in (`CodexAccountsWatcher.exe`, ~25 MB): the menu also appears when Codex is opened from its
+  own taskbar / Start icon (Codex restarts once); `-NoAutoStart` to skip
+- While switching, an opaque veil hides the error screen Codex shows for a second, until its UI is back
 - `CodexAccounts.ps1` CLI: `list`, `status`, `save`, `switch`, `rename`, `remove`, `lang`
 - `Install-CodexMultiProfile.ps1 -RemoveLegacy` / `CODEX_MP_REMOVE_LEGACY=1`: imports the logins saved by 0.1-0.2 and
   removes `%LOCALAPPDATA%\CodexParallelDesktop` (junctions into `~\.codex` are unlinked, never followed)
@@ -35,6 +40,8 @@ replaces the unreleased 0.3.0 clone-based in-app switcher.
   (`pool` / `stick` / `route`), layer, ChatGPT Web model block, doctor / repair / diagnostics
 
 ### Fixed
+- The helper hung with GBs of memory after Codex reloaded its window: a `Get-Content` string carries PSProvider /
+  PSDrive note properties that `ConvertTo-Json -Depth 8` serialized; the page script is now read with `ReadAllText`
 - The helper found no Codex window on Windows PowerShell 5.1 (`ConvertFrom-Json` emits a JSON array as one object),
   so the menu was never injected
 

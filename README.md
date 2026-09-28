@@ -33,6 +33,7 @@ Click your avatar at the bottom-left of Codex. Under your name there is an **Acc
 | Pencil / trash (hover a row) | Rename / remove a saved account (the one in use cannot be removed) |
 | `1`-`9` while the menu is open | Pick the account with that number |
 | `Ctrl+Alt+A` | Open the menu from anywhere in Codex |
+| Usage bars | Under each account: what is left of its limits (5h and week on paid plans, month on free), green / amber / red; hover for the reset time. Refreshed when you open the menu (at most once a minute) |
 | Usage-limit card | When Codex says you hit your usage limit, it offers to switch to the next saved account |
 
 The menu follows Codex's language (Vietnamese or English) and its light / dark theme.
@@ -45,9 +46,10 @@ Needs Windows 10/11, [Codex](https://chatgpt.com/codex) from the Microsoft Store
 irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.ps1 | iex
 ```
 
-This saves the account Codex is signed in to now as `main` and puts a **Codex** shortcut on the Desktop and
-in the Start menu. **Open Codex from that shortcut** (pin it to the taskbar instead of the original Codex
-icon): the original icon starts Codex without the account menu.
+This saves the account Codex is signed in to now as `main`, puts a **Codex** shortcut on the Desktop and in the
+Start menu, and starts a tiny watcher at sign-in (~25 MB, no window). Open Codex any way you like: from the
+original taskbar / Start icon Codex restarts once in its first seconds to get the menu; from the **Codex**
+shortcut it opens with the menu straight away (pin that one to skip the restart). `-NoAutoStart` skips the watcher.
 
 Upgrading from the old clone-based version (Codex1 / Codex Main / Codex Accounts shortcuts)? This imports
 those saved logins and removes the old install and its cloned `ChatGPT.exe` copies:

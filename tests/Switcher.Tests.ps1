@@ -46,9 +46,24 @@ foreach ($type in @("type: 'switch'", "type: 'add'", "type: 'remove'", "type: 'r
 Assert (-not $js.Contains("type: 'main'")) 'no clone-era main row'
 Assert ($js.Contains("'data-codex-character-input-boundary'")) 'dialog inputs opt out of Codex type-to-focus'
 
+# The page script must be read as a plain string: a Get-Content string carries PSProvider/PSDrive note properties
+# that ConvertTo-Json -Depth 8 serializes into GBs (the helper hung after every Codex reload).
+$hostText = Get-Content -LiteralPath (Join-Path $repo 'scripts\Start-CodexAccounts.ps1') -Raw
+Assert ($hostText -notmatch "Get-Content[^
+]*switcher-inject\.js") 'helper reads switcher-inject.js with ReadAllText'
+Assert ($hostText.Contains("[string]`$Params['expression']")) 'CDP expressions are sent as plain strings'
+
+# Watcher: compiles with the .NET Framework compiler and looks for the helper under the mutex the helper holds.
+$watcherSrc = Get-Content -LiteralPath (Join-Path $repo 'scripts\CodexAccountsWatcher.cs') -Raw
+$hostSrc = Get-Content -LiteralPath (Join-Path $repo 'scripts\Start-CodexAccounts.ps1') -Raw
+Assert ($watcherSrc.Contains('@"Local\CodexMultiProfileHost"') -and $hostSrc.Contains("'Local\CodexMultiProfileHost'")) 'watcher and helper use the same mutex'
+$exe = Join-Path $env:TEMP ('cmp-watcher-' + [guid]::NewGuid().ToString('n') + '.exe')
+try { Add-Type -TypeDefinition $watcherSrc -OutputAssembly $exe -OutputType WindowsApplication; Assert (Test-Path -LiteralPath $exe) 'watcher compiles' }
+finally { Remove-Item -LiteralPath $exe -ErrorAction SilentlyContinue }
+
 $node = Get-Command node -ErrorAction SilentlyContinue
 if ($node) {
     & $node.Source --check (Join-Path $repo 'scripts\switcher-inject.js')
     if ($LASTEXITCODE) { throw 'FAIL: switcher-inject.js syntax' }
 }
-Write-Output 'OK: host picks the Codex main window on PS 5.1, injected script stays DOM-only and uses the known messages.'
+Write-Output 'OK: host picks the Codex main window on PS 5.1, injected script stays DOM-only, watcher compiles and matches the helper.'

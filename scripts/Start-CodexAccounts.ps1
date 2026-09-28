@@ -33,6 +33,15 @@ $script:PendingReturn = ''  # account to go back to if the add is cancelled
 $script:QueuedToast = $null # toast to show once the reopened window says hello
 $script:LastAction = [datetime]::MinValue
 
+# Usage bars in the menu: /wham/usage per saved account, fetched without blocking the loop.
+Add-Type -AssemblyName System.Net.Http
+[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+$script:Http = New-Object System.Net.Http.HttpClient
+$script:Http.Timeout = [TimeSpan]::FromSeconds(15)
+$script:Usage = @{}       # name -> ConvertFrom-CodexUsageJson result
+$script:UsageAt = @{}     # name -> last fetch start
+$script:UsageTasks = @{}  # name -> pending Task<HttpResponseMessage>
+
 function Write-HostLog([string]$Message) { Write-CodexLog -Message "[host] $Message" -Root $Root }
 
 # ---------------------------------------------------------------- CDP plumbing
@@ -72,6 +81,7 @@ function Send-CdpMessage {
     param([Parameter(Mandatory)] $Conn, [Parameter(Mandatory)] [string]$Method, [hashtable]$Params = @{})
     $id = $script:NextId
     $script:NextId++
+    if ($Params.ContainsKey('expression')) { $Params['expression'] = [string]$Params['expression'] }  # plain string, see Invoke-AccountsHost
     $bytes = [Text.Encoding]::UTF8.GetBytes((@{ id = $id; method = $Method; params = $Params } | ConvertTo-Json -Depth 8 -Compress))
     $seg = New-Object System.ArraySegment[byte] -ArgumentList @(, $bytes)
     $cts = New-Object System.Threading.CancellationTokenSource
@@ -161,8 +171,56 @@ function Get-StoreFingerprint {
     return (($parts -join '|') + '|' + $script:Pending)
 }
 
+function Start-UsageFetch([int]$MaxAgeSec = 60) {
+    foreach ($a in @(Get-CodexAccounts -Root $Root)) {
+        if ($script:UsageTasks.ContainsKey($a.Name)) { continue }
+        $at = $script:UsageAt[$a.Name]
+        if ($at -and ((Get-Date) - $at).TotalSeconds -lt $MaxAgeSec) { continue }
+        $script:UsageAt[$a.Name] = Get-Date
+        try {
+            $req = New-CodexUsageRequest -AuthPath $a.AuthPath
+            if ($req) { $script:UsageTasks[$a.Name] = $script:Http.SendAsync($req) }
+        }
+        catch { }
+    }
+}
+
+function Complete-UsageFetches {
+    # Collect finished requests; $true when a bar changed. A login the server rejects shows no bar.
+    $changed = $false
+    foreach ($name in @($script:UsageTasks.Keys)) {
+        $task = $script:UsageTasks[$name]
+        if (-not $task.IsCompleted) { continue }
+        $script:UsageTasks.Remove($name)
+        if ($task.IsFaulted -or $task.IsCanceled) { continue }
+        $resp = $task.Result
+        try {
+            if ($resp.IsSuccessStatusCode) {
+                $script:Usage[$name] = ConvertFrom-CodexUsageJson -Json ($resp.Content.ReadAsStringAsync().Result)
+                $changed = $true
+            }
+            elseif ([int]$resp.StatusCode -in @(401, 403) -and $script:Usage.ContainsKey($name)) {
+                $script:Usage.Remove($name)
+                $changed = $true
+            }
+        }
+        catch { }
+        finally { $resp.Dispose() }
+    }
+    return $changed
+}
+
+function Move-UsageEntry([string]$From, [string]$To) {
+    foreach ($map in @($script:Usage, $script:UsageAt)) {
+        if ($map.ContainsKey($From)) {
+            if ($To) { $map[$To] = $map[$From] }
+            $map.Remove($From)
+        }
+    }
+}
+
 function Send-PageState([object[]]$Conns) {
-    $snap = Get-CodexSwitcherSnapshot -Root $Root -CodexHome $CodexHome -Pending $script:Pending
+    $snap = Get-CodexSwitcherSnapshot -Root $Root -CodexHome $CodexHome -Pending $script:Pending -Usage $script:Usage
     Send-PageEvent $Conns @{ kind = 'state'; state = $snap }
 }
 
@@ -251,6 +309,8 @@ function Invoke-PageRequest {
     $busy = ((Get-Date) - $script:LastAction).TotalSeconds -lt 1.5
     switch ($req.Type) {
         { $_ -in @('hello', 'refresh') } {
+            # The menu was opened: refresh usage bars older than a minute (they arrive a moment later).
+            Start-UsageFetch -MaxAgeSec 60
             Send-PageState $Conns
             if ($_ -eq 'hello' -and $script:QueuedToast) {
                 $q = $script:QueuedToast
@@ -302,6 +362,7 @@ function Invoke-PageRequest {
                 return $false
             }
             Write-HostLog ("removed {0}" -f $req.Profile)
+            Move-UsageEntry -From $req.Profile -To ''
             Send-PageState $Conns
             Send-PageToast $Conns 'success' 'removed' $req.Profile
         }
@@ -313,6 +374,7 @@ function Invoke-PageRequest {
                 return $false
             }
             Write-HostLog ("renamed {0} -> {1}" -f $req.Profile, $new)
+            Move-UsageEntry -From $req.Profile -To $new
             Send-PageState $Conns
             Send-PageToast $Conns 'success' 'renamed' $new
         }
@@ -365,7 +427,9 @@ function Update-FromLiveAuth([object[]]$Conns) {
 # ---------------------------------------------------------------- main loop
 
 function Invoke-AccountsHost {
-    $source = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'switcher-inject.js') -Raw -Encoding UTF8
+    # ReadAllText, not Get-Content: on Windows PowerShell 5.1 a Get-Content string carries PSPath / PSProvider /
+    # PSDrive note properties, and ConvertTo-Json then serializes those object graphs (GBs, minutes of CPU).
+    $source = [System.IO.File]::ReadAllText((Join-Path $PSScriptRoot 'switcher-inject.js'), [System.Text.Encoding]::UTF8)
     $binding = Get-CodexSwitcherBindingName
     $conns = New-Object System.Collections.ArrayList
     $lastDiscover = [datetime]::MinValue
@@ -409,11 +473,16 @@ function Invoke-AccountsHost {
             $mem = [System.Diagnostics.Process]::GetCurrentProcess().WorkingSet64
             if ($mem -gt 500MB) { Write-HostLog ("helper memory {0} MB, exiting to stay light" -f [int]($mem / 1MB)); break }
             $fingerprint = Get-StoreFingerprint
+            $push = $false
             if ($fingerprint -ne $lastFingerprint) {
                 $lastFingerprint = $fingerprint
                 Update-FromLiveAuth @($conns)
-                try { Send-PageState @($conns) } catch { }
+                $push = $true
             }
+            # Usage bars: keep them at most 10 minutes old, and show new numbers as soon as they arrive.
+            if ($conns.Count) { Start-UsageFetch -MaxAgeSec 600 }
+            if (Complete-UsageFetches) { $push = $true }
+            if ($push) { try { Send-PageState @($conns) } catch { } }
         }
 
         if ($conns.Count -eq 0) { Start-Sleep -Milliseconds 500; continue }

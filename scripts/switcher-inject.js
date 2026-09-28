@@ -64,6 +64,11 @@
       toast_added: 'Saved {detail}. You are now using it.',
       toast_removed: 'Removed {detail}.',
       toast_switched: 'Now using {detail}.',
+      usage_week: 'Week',
+      usage_month: 'Month',
+      usageTip: '{label}: {left}% left',
+      usageReset: 'resets in {span}',
+      unit_d: 'd', unit_h: 'h', unit_m: 'm',
       toast_renamed: 'Renamed to {detail}.',
       toast_exists: 'An account named {detail} already exists.',
       'toast_exists-as': 'That login is already saved as {detail}.',
@@ -118,6 +123,11 @@
       toast_added: 'Đã lưu {detail} và đang dùng nó.',
       toast_removed: 'Đã xoá {detail}.',
       toast_switched: 'Đang dùng {detail}.',
+      usage_week: 'Tuần',
+      usage_month: 'Tháng',
+      usageTip: '{label}: còn {left}%',
+      usageReset: 'đặt lại sau {span}',
+      unit_d: ' ngày', unit_h: ' giờ', unit_m: ' phút',
       toast_renamed: 'Đã đổi tên thành {detail}.',
       toast_exists: 'Đã có tài khoản tên {detail}.',
       'toast_exists-as': 'Tài khoản này đã được lưu với tên {detail}.',
@@ -304,12 +314,12 @@
     '--line:rgba(255,255,255,.06);--border:rgba(255,255,255,.08);--border-heavy:rgba(255,255,255,.16);',
     '--menu-bg:rgba(45,45,45,.94);--menu-bg:oklab(0.297161 0.0000135154 0.00000594556 / 0.9);--ring:rgba(255,255,255,.082);',
     '--veil:rgba(24,24,24,.94);--surface:#282828;--btn2:rgba(255,255,255,.05);--btn2h:rgba(255,255,255,.08);--pri-bg:#fff;--pri-fg:#0d0d0d;',
-    '--danger:#ff6764;--danger-bg:#4d100e;--danger-bgh:rgba(255,103,100,.17);--warn:#ff8549;--focus:#339cff;--flash:rgba(51,156,255,.16)}',
+    '--danger:#ff6764;--danger-bg:#4d100e;--danger-bgh:rgba(255,103,100,.17);--warn:#ff8549;--focus:#339cff;--flash:rgba(51,156,255,.16);--ok:#40c977;--mid:#f0b132;--track:rgba(255,255,255,.1)}',
     '.t-light{--fg:#1a1c1f;--fg2:#5d5d5d;--fg3:#8f8f8f;--hover:rgba(26,28,31,.05);',
     '--line:rgba(26,28,31,.06);--border:rgba(26,28,31,.08);--border-heavy:rgba(26,28,31,.12);',
     '--menu-bg:rgba(255,255,255,.94);--menu-bg:oklab(0.999994 0.0000455678 0.0000200868 / 0.9);--ring:rgba(26,28,31,.08);',
     '--veil:rgba(250,250,250,.94);--surface:#fff;--btn2:rgba(26,28,31,.05);--btn2h:rgba(26,28,31,.08);--pri-bg:#1a1c1f;--pri-fg:#fff;',
-    '--danger:#ba2623;--danger-bg:#ffd9d9;--danger-bgh:rgba(186,38,35,.17);--warn:#923b0f;--focus:#0068c7;--flash:rgba(0,104,199,.1)}'
+    '--danger:#ba2623;--danger-bg:#ffd9d9;--danger-bgh:rgba(186,38,35,.17);--warn:#923b0f;--focus:#0068c7;--flash:rgba(0,104,199,.1);--ok:#16a34a;--mid:#c27c0e;--track:rgba(26,28,31,.1)}'
   ].join('\n');
 
   var ROWS_CSS = [
@@ -317,7 +327,7 @@
     '.sec{display:flex;flex-direction:column;color:var(--fg);font-size:13px;font-weight:430;line-height:18.5714px}',
     '.head{display:flex;align-items:center;justify-content:space-between;height:26.5625px;padding:4px 8px;color:var(--fg2)}',
     '.head .k{font-size:12px;color:var(--fg3)}',
-    '.list{display:flex;flex-direction:column;max-height:214px;overflow-y:auto;overscroll-behavior:contain}',
+    '.list{display:flex;flex-direction:column;max-height:260px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}',
     '.list::-webkit-scrollbar{width:6px}.list::-webkit-scrollbar-thumb{background:var(--border-heavy);border-radius:6px}',
     '.row{position:relative;display:flex;align-items:center;gap:8px;width:100%;min-height:42.5625px;padding:5px 8px;',
     'border:0;border-radius:15px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;outline:none;',
@@ -337,6 +347,15 @@
     '.nm b{font-weight:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
     '.tag{flex:none;font-size:11px;line-height:16px;padding:0 6px;border-radius:999px;background:var(--btn2);color:var(--warn)}',
     '.em{font-size:12px;line-height:16px;color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    /* usage: one cell per limit window, label left, % left right, slim bar under it; cells share the row width */
+    '.use{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px;margin:5px 0 1px;max-width:196px}',
+    '.use.one{grid-template-columns:minmax(0,1fr);max-width:92px}',
+    '.ub{display:flex;flex-direction:column;gap:3px;min-width:0}',
+    '.ub .top{display:flex;justify-content:space-between;gap:6px;font-size:10.5px;line-height:12px;color:var(--fg3);white-space:nowrap}',
+    '.ub .top b{font-weight:500;color:var(--fg2);font-variant-numeric:tabular-nums}',
+    '.ub .bar{height:3px;border-radius:3px;background:var(--track);overflow:hidden}',
+    '.ub .bar i{display:block;height:100%;border-radius:3px;background:var(--ok);transition:width .3s ease}',
+    '.ub.mid .bar i{background:var(--mid)}.ub.low .bar i{background:var(--danger)}.ub.low .top b{color:var(--danger)}',
     '.end{flex:none;display:flex;align-items:center;gap:2px;margin-left:4px;color:var(--fg2)}',
     '.kbd{min-width:16px;text-align:right;font-size:13px;color:var(--fg3)}',
     '.chk{display:inline-flex;color:var(--fg)}',
@@ -435,6 +454,36 @@
   }
 
   /* ---------- account rows (shared by the Codex menu section and the fallback menu) ---------- */
+  /* Usage left per window (5h / week / month), from the host. Tiny bars under the email; tooltip = reset time. */
+  function usageLabel(label) {
+    if (label === 'week' || label === 'month') { return t('usage_' + label); }
+    return label;
+  }
+  function resetText(resetAt) {
+    if (!resetAt) { return ''; }
+    var mins = Math.max(0, Math.round((resetAt * 1000 - Date.now()) / 60000));
+    var d = Math.floor(mins / 1440), hh = Math.floor((mins % 1440) / 60), mm = mins % 60;
+    var span = d ? d + t('unit_d') + (hh ? ' ' + hh + t('unit_h') : '') : (hh ? hh + t('unit_h') + ' ' : '') + mm + t('unit_m');
+    return t('usageReset', { span: span });
+  }
+  function usageLine(p) {
+    var list = p.usage ? [].concat(p.usage) : [];
+    if (!list.length) { return null; }
+    list = list.slice(0, 2);
+    var line = h('span', { class: 'use' + (list.length === 1 ? ' one' : '') });
+    list.forEach(function (w) {
+      var left = Math.max(0, Math.min(100, 100 - (w.used || 0)));
+      var fill = h('i');
+      fill.style.width = left + '%';
+      var name = usageLabel(w.label);
+      line.appendChild(h('span', {
+        class: 'ub' + (left < 10 ? ' low' : (left < 30 ? ' mid' : '')),
+        title: t('usageTip', { label: name, left: left }) + (w.resetAt ? ' · ' + resetText(w.resetAt) : '')
+      }, [h('span', { class: 'top' }, [h('span', { text: name }), h('b', { text: left + '%' })]), h('span', { class: 'bar' }, [fill])]));
+    });
+    return line;
+  }
+
   function buildSection(opts) {
     var sec = h('div', { class: 'sec', role: 'group', 'aria-label': t('accounts') });
     sec.appendChild(h('div', { class: 'head' }, [h('span', { text: t('accounts') }), h('span', { class: 'k', text: (S.state && S.state.hotkey) || 'Ctrl+Alt+A' })]));
@@ -469,7 +518,7 @@
         class: 'row' + (cur ? ' cur' : '') + (S.flash === p.name && Date.now() < S.flashUntil ? ' flash' : ''),
         role: 'menuitemradio', 'aria-checked': cur ? 'true' : 'false', tabindex: cur ? '-1' : '0',
         title: cur ? t('current') : null, 'data-profile': p.name
-      }, [avatar(p.name), h('span', { class: 'txt' }, [nameLine, h('span', { class: 'em', text: sub })]), end]);
+      }, [avatar(p.name), h('span', { class: 'txt' }, [nameLine, h('span', { class: 'em', text: sub }), usageLine(p)]), end]);
       if (!cur) {
         row.addEventListener('click', function () { opts.onPick(p.name); });
         row.addEventListener('keydown', function (e) {

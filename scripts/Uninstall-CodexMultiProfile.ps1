@@ -11,6 +11,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'CodexMultiProfile' -ErrorAction SilentlyContinue
+Get-Process -Name 'CodexAccountsWatcher' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
     Where-Object { [string]$_.CommandLine -like '*Start-CodexAccounts.ps1*' -and $_.ProcessId -ne $PID } |
     ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
@@ -21,7 +23,7 @@ foreach ($lnk in @((Join-Path ([Environment]::GetFolderPath('Desktop')) 'Codex.l
         Remove-Item -LiteralPath $lnk -Force
     }
 }
-foreach ($name in @('CodexAccounts.psm1', 'Start-CodexAccounts.ps1', 'switcher-inject.js', 'CodexAccounts.ps1', 'codex.ico', 'VERSION', 'settings.json')) {
+foreach ($name in @('CodexAccounts.psm1', 'Start-CodexAccounts.ps1', 'switcher-inject.js', 'CodexAccounts.ps1', 'CodexAccountsWatcher.exe', 'codex.ico', 'VERSION', 'settings.json')) {
     Remove-Item -LiteralPath (Join-Path $Root $name) -Force -ErrorAction SilentlyContinue
 }
 if ($RemoveAccounts) {

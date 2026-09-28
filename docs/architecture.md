@@ -13,6 +13,20 @@ Codex shortcut
        └─ exits when Codex is closed
 ```
 
+## Watcher
+
+`CodexAccountsWatcher.exe` (compiled at install from `scripts/CodexAccountsWatcher.cs`, started at sign-in from
+HKCU `Run`): every 1.5 s it lists `ChatGPT.exe` processes; when the Store Codex runs and the helper's mutex
+(`Local\CodexMultiProfileHost`) is free it starts the helper, which reopens Codex with the DevTools port if needed.
+~25 MB, near-zero CPU. It exits by itself once the install folder is gone.
+
+## Usage bars
+
+The helper asks `https://chatgpt.com/backend-api/wham/usage` for every saved account with that account's own access
+token (the endpoint Codex itself uses), without blocking: one shared `HttpClient`, tasks checked in the main loop.
+When the menu opens (at most once a minute per account) and every 10 minutes. The page gets label / percent used /
+reset time only. A limit reached counts as out of quota; a login the server rejects shows no bar.
+
 ## Accounts
 
 - `%LOCALAPPDATA%\CodexMultiProfile\accounts\<name>\auth.json`: one saved copy of `~\.codex\auth.json` per account,

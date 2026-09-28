@@ -10,7 +10,7 @@ Log: `%LOCALAPPDATA%\CodexMultiProfile\codex-accounts.log` (masked, safe to past
 
 | Symptom | Try |
 |:---|:---|
-| No **Accounts** section in the avatar menu | Codex was opened from the original icon. Close it and open it from the **Codex** shortcut. `status` shows "WITHOUT the account menu" in that case |
+| No **Accounts** section in the avatar menu | The watcher should fix this within seconds (Codex restarts once). If not: is `CodexAccountsWatcher.exe` running? Re-run the installer, or open Codex from the **Codex** shortcut |
 | "The account helper is not running" in the menu | The helper exited. Open Codex again from the **Codex** shortcut (it attaches without restarting Codex) |
 | After switching, Codex shows its sign-in screen | That account's saved login expired. Sign in with the same account; it is saved automatically. Or use the account button at the bottom-left to go back |
 | "That login is already saved as ..." after Add account | You signed in with an account that is already in the list; nothing was added |

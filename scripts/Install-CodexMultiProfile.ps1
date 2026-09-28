@@ -19,6 +19,7 @@
 param(
     [switch]$RemoveLegacy,
     [switch]$SkipShortcuts,
+    [switch]$NoAutoStart,
     [string]$Root = (Join-Path $env:LOCALAPPDATA 'CodexMultiProfile'),
     [string]$CodexHome = $(if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $env:USERPROFILE '.codex' })
 )
@@ -107,6 +108,22 @@ catch { $icon = $null }
 if (-not $SkipShortcuts) {
     New-Shortcut -Path (Join-Path $desktop 'Codex.lnk') -Icon $icon
     New-Shortcut -Path $startMenu -Icon $icon
+}
+
+# Watcher: the menu also shows up when Codex is opened from its own taskbar / Start icon.
+$watcherExe = Join-Path $Root 'CodexAccountsWatcher.exe'
+$runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+Get-Process -Name 'CodexAccountsWatcher' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+if ($NoAutoStart) {
+    Remove-ItemProperty -Path $runKey -Name 'CodexMultiProfile' -ErrorAction SilentlyContinue
+}
+else {
+    Start-Sleep -Milliseconds 300
+    Add-Type -TypeDefinition (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'CodexAccountsWatcher.cs') -Raw) `
+        -OutputAssembly $watcherExe -OutputType WindowsApplication
+    Set-ItemProperty -Path $runKey -Name 'CodexMultiProfile' -Value ('"' + $watcherExe + '"')
+    Start-Process -FilePath $watcherExe
+    Write-Output 'Watcher on: the account menu also appears when Codex is opened from its own icon.'
 }
 
 if ($RemoveLegacy) {
