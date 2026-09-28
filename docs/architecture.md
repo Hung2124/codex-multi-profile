@@ -18,7 +18,9 @@ Codex shortcut
 `CodexAccountsWatcher.exe` (compiled at install from `scripts/CodexAccountsWatcher.cs`, started at sign-in from
 HKCU `Run`): every 1.5 s it lists `ChatGPT.exe` processes; when the Store Codex runs and the helper's mutex
 (`Local\CodexMultiProfileHost`) is free it starts the helper, which reopens Codex with the DevTools port if needed.
-~25 MB, near-zero CPU. It exits by itself once the install folder is gone.
+~25 MB, near-zero CPU. It exits by itself once the install folder is gone. A helper that ends within a minute
+while Codex runs makes it wait longer before the next try (20 s doubling up to 10 min), and the helper reopens
+Codex for the port at most once per 10 minutes unless the last reopen worked: never a restart loop.
 
 ## Usage bars
 
