@@ -1,38 +1,33 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Remove Desktop shortcuts and launcher scripts. Does not delete ~/.codex or profile auth unless -PurgeProfiles.
+  Remove the Codex shortcut, the menu helper and the scripts. Saved accounts are kept unless -RemoveAccounts.
+  ~/.codex (chats, settings, the login in use) is never touched.
 #>
 [CmdletBinding()]
-param([switch]$PurgeProfiles)
+param(
+    [switch]$RemoveAccounts,
+    [string]$Root = (Join-Path $env:LOCALAPPDATA 'CodexMultiProfile')
+)
 
 $ErrorActionPreference = 'Stop'
-$root = Join-Path $env:LOCALAPPDATA 'CodexParallelDesktop'
-$desktop = [Environment]::GetFolderPath('Desktop')
-$shell = New-Object -ComObject WScript.Shell
+Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'CodexMultiProfile' -ErrorAction SilentlyContinue
+Get-Process -Name 'CodexAccountsWatcher' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { [string]$_.CommandLine -like '*Start-CodexAccounts.ps1*' -and $_.ProcessId -ne $PID } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 
-Get-ChildItem -LiteralPath $desktop -Filter '*.lnk' -ErrorAction SilentlyContinue | ForEach-Object {
-    $shortcut = $shell.CreateShortcut($_.FullName)
-    $blob = "$($shortcut.Arguments) $($shortcut.WorkingDirectory) $($shortcut.TargetPath)"
-    if ($blob -like '*CodexParallelDesktop*') {
-        Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue
+$hostScript = Join-Path $Root 'Start-CodexAccounts.ps1'
+foreach ($lnk in @((Join-Path ([Environment]::GetFolderPath('Desktop')) 'Codex.lnk'), (Join-Path ([Environment]::GetFolderPath('Programs')) 'Codex (accounts).lnk'))) {
+    if ((Test-Path -LiteralPath $lnk) -and (New-Object -ComObject WScript.Shell).CreateShortcut($lnk).Arguments -like "*$hostScript*") {
+        Remove-Item -LiteralPath $lnk -Force
     }
 }
-
-if (-not (Test-Path -LiteralPath $root)) {
-    Write-Output 'Removed matching Desktop shortcuts. Nothing else was installed.'
-    return
+foreach ($name in @('CodexAccounts.psm1', 'Start-CodexAccounts.ps1', 'switcher-inject.js', 'CodexAccounts.ps1', 'CodexAccountsWatcher.exe', 'codex.ico', 'VERSION', 'settings.json')) {
+    Remove-Item -LiteralPath (Join-Path $Root $name) -Force -ErrorAction SilentlyContinue
 }
-
-Get-ChildItem -LiteralPath $root -File | Where-Object {
-    $_.Extension -in '.ps1', '.psm1', '.vbs', '.cmd', '.log' -or $_.Name -in @('.authswap-active', 'VERSION')
-} | Remove-Item -Force -ErrorAction SilentlyContinue
-
-if ($PurgeProfiles) {
-    Remove-Item -LiteralPath (Join-Path $root 'profiles') -Recurse -Force -ErrorAction SilentlyContinue
-    Write-Output 'Removed launcher files, Desktop shortcuts, and local profile auth copies.'
+if ($RemoveAccounts) {
+    Remove-Item -LiteralPath (Join-Path $Root 'accounts') -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath (Join-Path $Root 'accounts.json') -Force -ErrorAction SilentlyContinue
 }
-else {
-    Write-Output "Removed launcher files and Desktop shortcuts. Profile folders kept under $root\profiles."
-    Write-Output 'Pass -PurgeProfiles to delete those too. ~/.codex is never touched.'
-}
+Write-Output ("Uninstalled. Saved accounts {0}. Uninstall script left in {1}." -f $(if ($RemoveAccounts) { 'removed' } else { "kept in $Root\accounts" }), $Root)

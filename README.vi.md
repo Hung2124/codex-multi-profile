@@ -1,90 +1,82 @@
 # Codex Multi-Profile
 
 <p align="center">
-  <strong>Một app Windows để xem và chọn tài khoản ChatGPT trên Codex Desktop.<br>Một workspace dùng chung. Một cửa sổ (AuthSwap).</strong>
+  <strong>Đổi tài khoản ChatGPT ngay trong menu avatar của Codex (bản Microsoft Store) trên Windows.</strong><br>
+  Một app, một không gian làm việc: lịch sử chat, dự án, skill và cài đặt dùng chung.
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> ·
-  <a href="docs/router.md">Router</a> ·
-  <a href="docs/recipes.md">Recipes</a> ·
-  <a href="docs/troubleshooting.md">Troubleshooting</a>
+  <a href="README.md">English</a> &middot;
+  <a href="docs/architecture.md">Cách hoạt động</a> &middot;
+  <a href="docs/troubleshooting.md">Khắc phục sự cố</a>
 </p>
 
-<p align="center">
-  <img src="docs/images/hero.png" alt="Codex Multi-Profile — MAIN và CODEX1 qua AuthSwap" width="920">
-</p>
+> Công cụ không chính thức, không liên quan OpenAI. Dành cho người có nhiều tài khoản ChatGPT **hợp lệ** của chính mình.
+> Không dùng để chia sẻ tài khoản hay lách giới hạn sử dụng.
 
-> Không chính thức, không liên kết OpenAI. Cần [Codex Desktop](https://chatgpt.com/codex) từ Microsoft Store.
+## Có gì
 
-## Chọn tài khoản
+Bấm avatar ở góc dưới bên trái Codex. Ngay dưới tên bạn có mục **Tài khoản**:
 
-Sau khi cài, mở **Codex Accounts** trên Desktop. Đó là sản phẩm: danh sách tài khoản (tên, email đã che, lần dùng gần nhất, depleted, sticky). Bấm / Enter để mở profile qua AuthSwap.
+| Trong menu | Tác dụng |
+|:---|:---|
+| Bấm một tài khoản | Chuyển sang tài khoản đó trong 2-3 giây, cửa sổ Codex giữ nguyên (nếu đang ở màn hình đăng nhập thì Codex khởi động lại, ~10 giây) |
+| **Thêm tài khoản** | Codex khởi động lại ở màn hình đăng nhập; đăng nhập tài khoản kia là nó được lưu với tên bạn đặt |
+| Bút chì / thùng rác (rê chuột vào dòng) | Đổi tên / xoá tài khoản đã lưu (không xoá được tài khoản đang dùng) |
+| Phím `1`-`9` khi menu đang mở | Chọn tài khoản theo số |
+| `Ctrl+Alt+A` | Mở menu từ bất kỳ đâu trong Codex |
+| Thanh mức sử dụng | Dưới mỗi tài khoản: phần còn lại của các giới hạn (5h và Tuần với gói trả phí, Tháng với gói free), xanh / vàng / đỏ; rê chuột để xem giờ đặt lại. Cập nhật khi mở menu (tối đa 1 lần/phút) |
+| Thẻ hết lượt | Khi Codex báo hết giới hạn sử dụng, gợi ý chuyển sang tài khoản kế tiếp |
 
-Nếu Codex đang mở, app **đóng cửa sổ đó** rồi chuyển sang login đã lưu. Không hỏi mật khẩu khi `auth.json` còn và không bị poison. Đăng nhập lần đầu (profile mới) vẫn nằm trong Codex.
+Menu theo ngôn ngữ của Codex (Việt/Anh) và theo giao diện sáng/tối.
 
-Agent vẫn dùng CLI: `pool` / `stick` / `route` / `depleted`.
+## Cài đặt
 
-## Cài (một lệnh)
+Cần Windows 10/11, [Codex](https://chatgpt.com/codex) từ Microsoft Store, đã đăng nhập một lần.
 
 ```powershell
 irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.ps1 | iex
 ```
 
-Giống one-liner curl|bash của b-nnett/codex-subscription-router — không vá ChatGPT.exe.
+Trình cài đặt lưu tài khoản Codex đang dùng thành `main`, tạo shortcut **Codex** trên Desktop và Start menu, và bật một
+trình theo dõi siêu nhẹ chạy cùng Windows (~25 MB, không có cửa sổ). Mở Codex kiểu nào cũng được: từ icon gốc trên
+taskbar / Start thì Codex tự khởi động lại một lần trong vài giây đầu để có menu; từ shortcut **Codex** thì có menu ngay
+(ghim shortcut này để khỏi phải khởi động lại). `-NoAutoStart` để không dùng trình theo dõi.
 
-1. Cài Codex Desktop, đăng nhập acc chính một lần, rồi đóng app.
-2. Chạy lệnh trên.
-3. Shortcut **Codex Accounts** (chính) / Codex1 / Codex Main / Codex Profiles.
-
-## Router
-
-**Người dùng:** mở **Codex Accounts**. **Agent:** `CodexProfile.ps1 -Action route`.
-
-Bảng định tuyến kiểu subscription-router, vẫn một cửa sổ vì AuthSwap chỉ có một ~/.codex/auth.json. Chi tiết: [docs/router.md](docs/router.md).
-
-| Tình huống | Cách xử lý |
-|:---|:---|
-| Chat / folder mới | Profile non-depleted dùng lâu nhất (LRU) |
-| Cùng git repo / workspace | Sticky owner |
-| Owner bị đánh dấu depleted | Failover sang profile còn lại |
-| Tất cả depleted | Một thông báo gộp (email đã che). Không mở app |
-| Đang mở một cửa sổ Codex | App đóng clone rồi chuyển acc. CLI `route` chỉ in lựa chọn |
+Nâng cấp từ bản cũ dùng clone (shortcut Codex1 / Codex Main / Codex Accounts)? Lệnh này nhập các tài khoản
+đã lưu, xoá bản cũ và các bản sao `ChatGPT.exe`:
 
 ```powershell
-$m = "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1"
-powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action pool
-powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action stick -Name codex1
-powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action route
+$env:CODEX_MP_REMOVE_LEGACY = '1'; irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.ps1 | iex
 ```
 
-Chỉ dùng tài khoản bạn sở hữu / được phép. depleted là cờ local — không phải công cụ vượt quota.
+## Nên biết
 
-## Mục đích & sử dụng hợp lệ
+- **Đừng dùng "Đăng xuất" của Codex để đổi tài khoản.** Nó có thể làm hỏng bản đăng nhập đã lưu. Hãy dùng menu.
+- Tài khoản có đăng nhập đã hết hạn sẽ hiện màn hình đăng nhập sau khi chuyển. Đăng nhập lại đúng tài khoản đó là
+  được lưu tự động. Góc dưới trái vẫn có nút tài khoản nhỏ để chuyển sang tài khoản khác.
+- Câu trả lời Codex đang viết dở sẽ dừng khi bạn chuyển tài khoản (đăng nhập thay đổi giữa chừng).
+- Trình hỗ trợ menu là một tiến trình PowerShell ẩn, chỉ chạy khi Codex mở (~130 MB, gần như không tốn CPU).
 
-Repo này là công cụ mã nguồn mở, chạy local trên Windows dành cho developer đã có nhiều tài khoản ChatGPT hợp lệ (ví dụ cá nhân và công ty).
-
-Repo không nhắm tới chia sẻ gói trả phí, vượt quota, scrape, API không chính thức, hoặc trái Điều khoản OpenAI.
-
-## AuthSwap
-
-CODEX_HOME thứ hai thường không đổi acc — app vẫn đọc ~/.codex/auth.json. AuthSwap chép token acc phụ vào đúng file app đọc; lúc đóng thì restore acc chính.
-
-Layer và model ChatGPT Web tắt mặc định (-Action layer / -Action models).
-
-## Gỡ
+## Dòng lệnh
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Uninstall-CodexMultiProfile.ps1
+$cli = "$env:LOCALAPPDATA\CodexMultiProfile\CodexAccounts.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File $cli list      # hoặc: status | save -Name x | switch -Name x | rename -Name x -NewName y | remove -Name x | lang -Name vi
 ```
 
-Không xóa ~/.codex.
+## Gỡ cài đặt
 
-## Tài liệu
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexMultiProfile\Uninstall-CodexMultiProfile.ps1"   # thêm -RemoveAccounts để xoá các tài khoản đã lưu
+```
 
-- [Router](docs/router.md)
-- [Architecture](docs/architecture.md)
-- [Troubleshooting](docs/troubleshooting.md)
-- [FAQ](docs/faq.md)
-- [Recipes](docs/recipes.md)
-- [Changelog](CHANGELOG.md)
+`~\.codex` (chat, cài đặt, tài khoản đang dùng) không bao giờ bị động tới.
+
+## Riêng tư và bảo mật
+
+- Tài khoản đã lưu chỉ nằm trên máy này ở `%LOCALAPPDATA%\CodexMultiProfile\accounts`. Không gửi đi đâu cả.
+- Cửa sổ Codex chỉ nhận email đã che (`ab***@example.com`), không bao giờ nhận token.
+- Menu nói chuyện với trình hỗ trợ qua Chrome DevTools protocol chỉ trên `127.0.0.1`. Các chương trình khác chạy
+  dưới tài khoản Windows của bạn cũng có thể chạm tới cổng này; nếu điều đó quan trọng với máy bạn thì đừng dùng công cụ này.
+- Không sửa file nào của Codex. Xem [docs/architecture.md](docs/architecture.md).
