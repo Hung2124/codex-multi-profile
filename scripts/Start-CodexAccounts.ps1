@@ -101,9 +101,11 @@ function Connect-CdpTarget {
         Stream   = (New-Object System.IO.MemoryStream)
         Task     = $null
     }
-    # No Runtime.enable / Page.enable: bindingCalled arrives without them, and enabling them would
-    # stream every Codex console message and page event through this PowerShell process.
+    # No Runtime.enable: bindingCalled arrives without it, and it would stream every Codex console
+    # message through this PowerShell process. Page.enable is needed (and cheap: a few events per
+    # navigation) for the new-document script to run again when Codex reloads its window.
     Send-CdpMessage -Conn $conn -Method 'Runtime.addBinding' -Params @{ name = (Get-CodexSwitcherBindingName) }
+    Send-CdpMessage -Conn $conn -Method 'Page.enable'
     Send-CdpMessage -Conn $conn -Method 'Page.addScriptToEvaluateOnNewDocument' -Params @{ source = $Source }
     Send-CdpMessage -Conn $conn -Method 'Runtime.evaluate' -Params @{ expression = $Source; returnByValue = $true }
     Start-CdpReceive $conn
@@ -378,8 +380,19 @@ function Invoke-AccountsHost {
             $conns.RemoveAt($idx)
             continue
         }
+        if (-not $text) { continue }
+        if ($text.Contains('"Page.domContentEventFired"')) {
+            # Codex reloaded its window. Without Runtime.enable the binding is not carried into the new
+            # page by itself; re-adding it does (the script itself comes back via addScriptToEvaluateOnNewDocument).
+            try {
+                Send-CdpMessage -Conn $conn -Method 'Runtime.removeBinding' -Params @{ name = $binding }
+                Send-CdpMessage -Conn $conn -Method 'Runtime.addBinding' -Params @{ name = $binding }
+            }
+            catch { }
+            continue
+        }
         # Replies to our own commands are skipped without parsing; only the page's requests matter.
-        if (-not $text -or -not $text.Contains('"Runtime.bindingCalled"')) { continue }
+        if (-not $text.Contains('"Runtime.bindingCalled"')) { continue }
         $msg = $null
         try { $msg = ConvertFrom-Json -InputObject $text } catch { continue }
         if ([string]$msg.params.name -eq $binding) {

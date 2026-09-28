@@ -679,6 +679,9 @@
     layerHost = document.createElement('div');
     layerHost.id = 'cmp-switcher-root';
     layerHost.setAttribute('data-codex-multi-profile', 'switcher');
+    // Codex sends printable keys typed "nowhere" to the composer. Inside a closed shadow root our
+    // inputs look like a plain div to it, so opt out the way Codex's own terminal / editors do.
+    layerHost.setAttribute('data-codex-character-input-boundary', '');
     parent.appendChild(layerHost);
     layerShadow = layerHost.attachShadow({ mode: 'closed' });
     adopt(layerShadow, TOKENS + '\n' + ROWS_CSS + '\n' + LAYER_CSS);

@@ -47,8 +47,8 @@ instance is still exiting hangs on "The application is exiting and cannot servic
 
 ## Helper cost
 
-No `Runtime.enable` / `Page.enable`: the binding works without them, and enabling them would stream every Codex console
-message through PowerShell. Replies are skipped without JSON parsing. Idle cost: ~130 MB, ~1 s CPU per minute.
+No `Runtime.enable`: the binding works without it, and it would stream every Codex console message through PowerShell.
+`Page.enable` is kept (a few events per navigation): the new-document script needs it to run again after a reload. Replies are skipped without JSON parsing. Idle cost: ~130 MB, ~1 s CPU per minute.
 
 ## Security notes
 

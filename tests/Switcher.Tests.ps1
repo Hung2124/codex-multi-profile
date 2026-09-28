@@ -44,6 +44,7 @@ foreach ($type in @("type: 'switch'", "type: 'add'", "type: 'remove'", "type: 'r
     Assert ($js.Contains($type)) "page sends $type"
 }
 Assert (-not $js.Contains("type: 'main'")) 'no clone-era main row'
+Assert ($js.Contains("'data-codex-character-input-boundary'")) 'dialog inputs opt out of Codex type-to-focus'
 
 $node = Get-Command node -ErrorAction SilentlyContinue
 if ($node) {

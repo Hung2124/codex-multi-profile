@@ -22,7 +22,7 @@ replaces the unreleased 0.3.0 clone-based in-app switcher.
   removes `%LOCALAPPDATA%\CodexParallelDesktop` (junctions into `~\.codex` are unlinked, never followed)
 
 ### Changed
-- Helper cost: no `Runtime.enable` / `Page.enable`, no JSON parsing of CDP replies, no WMI polling, work only when
+- Helper cost: no `Runtime.enable`, no JSON parsing of CDP replies, no WMI polling, work only when
   `auth.json` or the store changes (~130 MB, ~1 s CPU per minute)
 - Shortcut runs through `conhost --headless` (no VBScript)
 

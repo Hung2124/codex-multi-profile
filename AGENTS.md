@@ -6,7 +6,8 @@ Windows-only helper: several ChatGPT logins for the **Microsoft Store Codex**, s
 - Start the Store Codex only through `Start-CodexStore` (IApplicationActivationManager). Do not copy / clone
   `ChatGPT.exe` (26.9xx needs package identity), do not use `Invoke-CommandInDesktopPackage` or `shell:AppsFolder`
   (both hang from a normal process), do not patch Codex files.
-- Keep the helper cheap: no `Runtime.enable` / `Page.enable`, no JSON parsing of CDP replies, no WMI in the loop.
+- Keep the helper cheap: no `Runtime.enable` (console flood), no JSON parsing of CDP replies, no WMI in the loop.
+  `Page.enable` stays: without it the injected script is not re-added after Codex reloads its window.
 - Page input goes through `ConvertFrom-CodexSwitcherMessage`. Only masked emails reach the page. The injected
   script builds DOM with `createElement` only (tests enforce this).
 - Never drop a login that is not saved (`Clear-CodexLiveAuth` refuses). Sync the live `auth.json` into its account
