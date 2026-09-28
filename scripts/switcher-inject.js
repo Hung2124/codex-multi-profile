@@ -551,6 +551,14 @@
     shadow.appendChild(wrap);
   }
 
+  // Codex's menu separator: an empty, non-interactive row (26.9xx: a 9 px div with app-menu-separator classes).
+  function isSeparator(el) {
+    if (!el || isOurs(el) || (el.textContent || '').trim() || el.querySelector('button,[role^="menuitem"],input')) { return false; }
+    if (el.getAttribute('role') === 'separator' || /separator/.test(String(el.className || ''))) { return true; }
+    var r = el.getBoundingClientRect();
+    return r.height > 0 && r.height <= 16;
+  }
+
   function injectInto(menu) {
     for (var i = 0; i < S.sections.length; i++) {
       if (S.sections[i].menu === menu && S.sections[i].host.isConnected) { return; }
@@ -561,9 +569,12 @@
     host.style.display = 'block';
     var shadow = host.attachShadow({ mode: 'closed' });
     adopt(shadow, TOKENS + '\n' + ROWS_CSS);
-    // Right under the identity row (first item), above Usage / Settings / Log out.
+    // Under the identity row (first item), after Codex's own separator when it has one, so the menu reads
+    // identity / --- / Accounts / --- / Usage, Settings, Log out with one line between groups.
     var identity = items.length ? items[0] : null;
-    if (identity && identity.parentNode) { identity.parentNode.insertBefore(host, identity.nextSibling); }
+    var anchor = identity;
+    if (identity && isSeparator(identity.nextElementSibling)) { anchor = identity.nextElementSibling; }
+    if (anchor && anchor.parentNode) { anchor.parentNode.insertBefore(host, anchor.nextSibling); }
     else { menu.insertBefore(host, menu.firstChild); }
     var entry = { host: host, shadow: shadow, menu: menu };
     S.sections = S.sections.filter(function (s) { return s.host.isConnected && s.menu !== menu; });
