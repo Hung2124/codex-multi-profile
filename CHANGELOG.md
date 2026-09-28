@@ -2,6 +2,25 @@
 
 All notable changes to this project are documented here.
 
+## 0.3.0 — 2026-09-28
+
+### Added
+- **In-app account switcher** (opt-in): click your avatar in Codex and the account menu lists your saved accounts under your identity row. Click one to switch (one-window AuthSwap via `Launch-CodexProfile.ps1 -FastSwitch`, Codex reopens in a few seconds); `1`-`9` pick by number; `Ctrl+Alt+A` opens the menu
+- **Add account** from that menu (Codex-style dialog, accents normalised: "Công việc" → `cong-viec`); the new account appears in the list at once with a **Sign in now** action
+- **Remove account** from that menu (trash on hover + confirm dialog); `Remove-CodexProfile` deletes the saved login, launchers, Desktop shortcut and router entries, never the active profile, never `~\.codex`
+- Styled with the current Codex (26.9xx) account-menu metrics and light / dark tokens; injected as a closed shadow root inside Codex's own menu, React keeps rendering its own rows. Falls back to a same-looking account control if the avatar button cannot be found
+- **Main account** row (opens the Store Codex after a confirm), usage-limit card that suggests the next saved, non-depleted login (suggestion only)
+- Vietnamese and English UI (auto from system, or `-Lang vi|en`)
+- `Start-CodexSwitcherHost.ps1`: hidden per-clone bridge. Checks the loopback CDP port is owned by the cloned ChatGPT.exe, talks over `Runtime.addBinding` (no HTTP listener, no token file), re-injects after renderer reloads, exits with the clone
+- `CodexProfile.ps1 -Action switcher` (`-Disable`, `-Lang`, `-CdpPort`), **Trong Codex** toggle in Codex Accounts, `Install-CodexMultiProfile.ps1 -EnableInAppSwitcher`, `install.ps1 -InApp` / `CODEX_MP_INAPP=1`
+- Router module: `Get-CodexSwitcherState`, `Set-CodexSwitcherEnabled`, `Get-CodexCdpLaunchPort`, `Get-CodexSwitcherSnapshot`, `ConvertFrom-CodexSwitcherMessage`, `Test-CodexTextHasFullEmail`, `Remove-CodexProfile`
+- `doctor` reports `switcher-on` / `switcher-missing`; `tests/InAppSwitcher.Tests.ps1`; `docs/in-app-switcher.md`
+
+### Changed
+- Launchers stop stale switcher hosts before a switch (`Stop-CodexSwitcherHosts`)
+- Uninstall also removes packaged `.js` files
+- Scripts renormalized to the CRLF line endings `.gitattributes` already asked for
+
 ## 0.2.0 — 2026-08-20
 
 ### Added

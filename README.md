@@ -13,6 +13,7 @@
 
 <p align="center">
   <a href="README.vi.md">Tiếng Việt</a> &middot;
+  <a href="docs/in-app-switcher.md">Switch inside Codex</a> &middot;
   <a href="docs/router.md">Router</a> &middot;
   <a href="docs/recipes.md">Recipes</a> &middot;
   <a href="docs/troubleshooting.md">Troubleshooting</a> &middot;
@@ -32,6 +33,25 @@ After install, open **Codex Accounts** on the Desktop. That is the product: a da
 If a Codex window is already open, the app **closes it** and switches to the saved login. No password prompt when `auth.json` is present and not poisoned. First-run sign-in still happens inside Codex (this app does not collect a ChatGPT login).
 
 Agents keep using the CLI: `pool` / `stick` / `route` / `depleted`.
+
+## Switch without leaving Codex (new in 0.3.0)
+
+Turn on **Trong Codex** in Codex Accounts (or `CodexProfile.ps1 -Action switcher`). Then click **your avatar**
+at the bottom-left of Codex: the account menu now lists your saved accounts. Click one and Codex reopens on that
+login in a few seconds with the same chats and projects. **Add account** adds a row to the list, the trash icon
+removes one, and when Codex says you hit your usage limit it offers to switch.
+
+<p align="center">
+  <img src="docs/images/in-app-switcher.png" alt="Accounts section inside the Codex avatar menu" width="880">
+</p>
+
+Opt-in, clone-only, loopback-only, no `app.asar` / ChatGPT.exe patch. Details and security notes:
+[docs/in-app-switcher.md](docs/in-app-switcher.md).
+
+```powershell
+# install with the in-app switcher already on
+$env:CODEX_MP_INAPP = '1'; irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.ps1 | iex
+```
 
 ## Install
 
@@ -164,6 +184,7 @@ $m    = "$root\CodexProfile.ps1"
 | Diagnostic bundle | `-Action diagnostics` |
 | Verify install | `-Action verify` |
 | Remove a profile | `-Action remove -Name codex2 -Force` |
+| In-app account switcher | `-Action switcher` / `switcher -Disable` (`-Lang vi`, `-CdpPort 9444`) |
 | Optional clone layer | `-Action layer` / `layer -Disable` |
 | Optional ChatGPT Web models | `-Action models` / `models -Disable` |
 | Safe bug-report log | `...\Redact-LaunchTrace.ps1` |
@@ -179,6 +200,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\Run-All.ps1
 
 ### Optional extras (off by default)
 
+- **In-app switcher** -- Accounts list in Codex's avatar menu (click to switch, add, remove; `Ctrl+Alt+A`) on the **cloned** Codex window. [docs/in-app-switcher.md](docs/in-app-switcher.md)
 - **Layer** -- badge, wider transcript, keep details open on the **cloned** ChatGPT.exe only. [docs/layer.md](docs/layer.md)
 - **ChatGPT Web models** -- write `~\.codex\config.toml` (UTF-8, no BOM) with `chatgpt-web/luna|light|medium|high|xhigh|pro` pointing at a local Responses bridge you already run on `127.0.0.1` (default `http://127.0.0.1:1455/v1`). This repo does **not** log you into chatgpt.com and does not ship or name a companion scraper.
 
@@ -203,6 +225,7 @@ So Codex / Cursor agents know **not** to launch `Codex.exe`, **not** to use `Win
 | Clone `ChatGPT.exe` out of the Store package | Run the Store binary in-place |
 | Restore main auth on close; refuse to save if active email == main | Delete `~\.codex` history |
 | Choose among **your** profiles (sticky / LRU / depleted) | Mux many accounts in one window, patch asar, or bypass quotas |
+| Opt-in switcher UI in the clone over loopback CDP (masked emails only) | Touch the Store app, open a network listener, or switch accounts on its own |
 
 Do not commit `auth.json` or `*.bak`. Prefer `Redact-LaunchTrace.ps1` before pasting logs.
 
@@ -223,6 +246,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Uninstall-CodexMul
 
 | Doc | Topic |
 |:---|:---|
+| [In-app switcher](docs/in-app-switcher.md) | Switch accounts from inside the Codex window |
 | [Router](docs/router.md) | Codex Accounts app + pool / stick / route / depleted |
 | [Layer](docs/layer.md) | Optional clone-only desktop tweaks |
 | [Architecture](docs/architecture.md) | Why AuthSwap exists |

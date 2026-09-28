@@ -24,6 +24,9 @@ powershell -NoProfile -STA -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\Code
 
 Headless (tests / agents, no window): `-Headless`.
 
+Prefer not to leave Codex? Turn on **Trong Codex** (or `-Action switcher`) and pick from the Accounts list in the Codex avatar menu
+instead: [in-app-switcher.md](in-app-switcher.md).
+
 ## One-command install
 
 ```powershell

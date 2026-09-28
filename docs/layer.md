@@ -15,6 +15,9 @@ When off, launch is unchanged: the cmd wrapper does set + start of the cloned Ch
 When on, the same wrapper adds a loopback remote-debugging port on the clone only,
 and Start-CodexLayer.ps1 applies scripts/layer-inject.js.
 
+The [in-app switcher](in-app-switcher.md) uses the same loopback mechanism. If both are on,
+they share the layer's port; the switcher keeps its own long-lived session so it survives reloads.
+
 ## Hard rules
 
 - Never the Microsoft Store package / WindowsApps

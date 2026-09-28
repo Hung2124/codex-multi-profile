@@ -64,6 +64,12 @@ Shared logic lives in `scripts/CodexMultiProfile.psm1`:
 `route` picks sticky workspace owner or LRU of non-depleted profiles, then launches via AuthSwap.
 Still one window. See [router.md](router.md).
 
+## Optional in-app switcher (0.3.0)
+
+`Start-CodexSwitcherHost.ps1` holds a loopback CDP session to the cloned ChatGPT.exe, injects
+`switcher-inject.js` and receives picks over `Runtime.addBinding`. A pick runs
+`Launch-CodexProfile.ps1 -FastSwitch` (same AuthSwap). See [in-app-switcher.md](in-app-switcher.md).
+
 ## Optional layer / models
 
 Layer: loopback into the cloned ChatGPT.exe only ([layer.md](layer.md)).
@@ -76,3 +82,5 @@ Models: marked block in `~/.codex/config.toml` pointing at a local Responses bri
 | `CodexRouter.psm1` | pool / stick / route / depleted / layer state / models block |
 | `Start-CodexLayer.ps1` | Loopback apply of `layer-inject.js` to the clone |
 | `layer-inject.js` | Badge, wider transcript, keep details open |
+| `Start-CodexSwitcherHost.ps1` | In-app switcher bridge (loopback CDP binding, validated requests) |
+| `switcher-inject.js` | Accounts section in the Codex avatar menu (switch, add, remove) |

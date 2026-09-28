@@ -12,6 +12,13 @@ Default log (emails are masked by the launcher; still prefer the redactor before
 
 `%LOCALAPPDATA%\CodexParallelDesktop\launch-trace.log`
 
+## No Accounts list in the Codex avatar menu
+
+1. `CodexProfile.ps1 -Action switcher` (turns it on and prints the port).
+2. Reopen the profile from Codex Accounts, then click your avatar (bottom-left) or press Ctrl+Alt+A.
+3. `-Action doctor` should show `switcher-on`. `[switcher]` lines in `launch-trace.log` show attach / refusal reasons
+   (for example the port being owned by another program). See [in-app-switcher.md](in-app-switcher.md).
+
 ## Stale AuthSwap lock
 
 `doctor` reports `stale-swap-lock` when `.authswap-active` exists but no clone is running.
