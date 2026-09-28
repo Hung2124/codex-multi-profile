@@ -9,8 +9,8 @@ package identity"), so the cloned `ChatGPT.exe` the earlier versions launched no
 replaces the unreleased 0.3.0 clone-based in-app switcher.
 
 ### Added
-- **Accounts in the Codex avatar menu** of the Store app: click an account to switch (Codex restarts on that login,
-  ~10 s), **Add account** (Codex reopens on its sign-in screen, the new login is saved under the chosen name),
+- **Accounts in the Codex avatar menu** of the Store app: click an account to switch in 2-3 s (only the codex.exe
+  app-server restarts, the window stays; full restart from a sign-in screen), **Add account** (Codex reopens on its sign-in screen, the new login is saved under the chosen name),
   rename (pencil) and remove (trash) on hover, `1`-`9`, `Ctrl+Alt+A`, usage-limit suggestion card
 - One **Codex** shortcut (Desktop + Start menu) that starts the Store Codex through `IApplicationActivationManager`
   with DevTools on `127.0.0.1` and runs the hidden helper (`Start-CodexAccounts.ps1`) while Codex is open
@@ -25,6 +25,10 @@ replaces the unreleased 0.3.0 clone-based in-app switcher.
 - Helper cost: no `Runtime.enable`, no JSON parsing of CDP replies, no WMI polling, work only when
   `auth.json` or the store changes (~130 MB, ~1 s CPU per minute)
 - Shortcut runs through `conhost --headless` (no VBScript)
+- Page script is event-driven: observes only `<body>`'s direct children (Codex menus are portals) and scans right after
+  the avatar click; the usage-limit watcher batches small nodes once a second (no work per streamed token)
+- Closing Codex ends its whole process tree with `Stop-Process` from one snapshot and never throws; Codex is always
+  started again after a failed switch
 
 ### Removed
 - Cloned `ChatGPT.exe`, Codex1 / Codex Main launchers, AuthSwap watcher, Codex Accounts WPF app, router

@@ -379,26 +379,87 @@ function Test-CodexStoreHasCdp {
     return (@(Get-CodexStoreProcesses | Where-Object { [string]$_.CommandLine -match ("--remote-debugging-port={0}(\s|`"|$)" -f $Port) }).Count -gt 0)
 }
 
+function Get-CodexStoreProcessTree {
+    <#
+    .SYNOPSIS
+      Ids of the Store Codex and everything it started (renderers, GPU, the codex.exe app-server,
+      computer-use helpers), from one process snapshot.
+    #>
+    $all = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue)
+    $ids = New-Object System.Collections.Generic.List[int]
+    $todo = New-Object System.Collections.Generic.List[int]
+    foreach ($p in $all) {
+        if ($p.Name -eq 'ChatGPT.exe' -and [string]$p.ExecutablePath -like '*\WindowsApps\OpenAI.Codex_*') { $todo.Add([int]$p.ProcessId) }
+    }
+    while ($todo.Count -gt 0) {
+        $id = $todo[0]
+        $todo.RemoveAt(0)
+        if ($ids.Contains($id)) { continue }
+        $ids.Add($id)
+        foreach ($c in $all) { if ([int]$c.ParentProcessId -eq $id -and -not $ids.Contains([int]$c.ProcessId)) { $todo.Add([int]$c.ProcessId) } }
+    }
+    return , $ids.ToArray()
+}
+
+function Get-CodexAppServer {
+    <#
+    .SYNOPSIS
+      The codex.exe app-server(s) the Store Codex window talks to (ProcessId, CreationDate).
+      It holds the ChatGPT login; the window itself does not.
+    #>
+    $mains = @(Get-CodexStoreProcesses | ForEach-Object { [int]$_.ProcessId })
+    if ($mains.Count -eq 0) { return @() }
+    return @(Get-CimInstance Win32_Process -Filter "Name='codex.exe'" -ErrorAction SilentlyContinue | Where-Object {
+            $mains -contains [int]$_.ParentProcessId -and [string]$_.CommandLine -match '\sapp-server(\s|$)'
+        })
+}
+
+function Restart-CodexAppServer {
+    <#
+    .SYNOPSIS
+      Fast account switch: end only the app-server, run $Swap (auth.json changes) and let the Codex
+      window start a new app-server on the new login. The window stays open and picks the account
+      up by itself (a few seconds, no restart). Returns $false when Codex did not bring a new
+      app-server up; the caller then restarts Codex. Errors from $Swap are rethrown.
+    #>
+    param([Parameter(Mandatory)] [scriptblock]$Swap, [int]$TimeoutSec = 10)
+    $old = @(Get-CodexAppServer)
+    if ($old.Count -eq 0) { return $false }
+    $gone = New-Object System.Collections.Generic.List[int]
+    foreach ($p in $old) { $gone.Add([int]$p.ProcessId) }
+    Stop-Process -Id $gone.ToArray() -Force -ErrorAction SilentlyContinue
+    $deadline = (Get-Date).AddSeconds(3)
+    while ((Get-Date) -lt $deadline -and @(Get-Process -Id $gone.ToArray() -ErrorAction SilentlyContinue).Count -gt 0) { Start-Sleep -Milliseconds 50 }
+    & $Swap
+    $swapped = Get-Date
+    $deadline = $swapped.AddSeconds($TimeoutSec)
+    while ((Get-Date) -lt $deadline) {
+        $fresh = @(Get-CodexAppServer | Where-Object { -not $gone.Contains([int]$_.ProcessId) })
+        foreach ($p in $fresh) {
+            if ($p.CreationDate -ge $swapped.AddMilliseconds(-50)) { return $true }
+            # Codex was quicker than the swap: this one may have read the old login. Once more.
+            $gone.Add([int]$p.ProcessId)
+            Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
+        }
+        Start-Sleep -Milliseconds 200
+    }
+    return $false
+}
+
 function Stop-CodexStore {
     <#
     .SYNOPSIS
-      Close the Store Codex: ask the window to close, then end the process tree.
+      End the Store Codex and its whole process tree, and wait until it is really gone: a new
+      instance started while the old one is still exiting hangs on "The application is exiting".
+      (Closing the window only hides Codex, so there is nothing to wait for there.) Never throws.
     #>
-    param([double]$GraceSeconds = 0.5)
-    $ids = @(Get-CodexStoreProcesses | ForEach-Object { [int]$_.ProcessId })
+    $ids = Get-CodexStoreProcessTree
     if ($ids.Count -eq 0) { return }
-    # Get-Process polling (no WMI) keeps this fast; Codex usually only hides on close, hence the short grace.
-    $alive = { @(Get-Process -Id $ids -ErrorAction SilentlyContinue) }
-    foreach ($gp in (& $alive)) { try { [void]$gp.CloseMainWindow() } catch { } }
-    $deadline = (Get-Date).AddSeconds($GraceSeconds)
-    while ((Get-Date) -lt $deadline -and @(& $alive).Count -gt 0) { Start-Sleep -Milliseconds 150 }
-    foreach ($gp in (& $alive)) { & taskkill.exe /PID $gp.Id /T /F 2>&1 | Out-Null }
-    # Wait for every ChatGPT.exe of the package (renderers, GPU, ...), not just the main one: a new
-    # instance started while the old one is still exiting hangs on "The application is exiting".
-    $any = { @(Get-Process -Name 'ChatGPT' -ErrorAction SilentlyContinue | Where-Object { [string]$_.Path -like '*\WindowsApps\OpenAI.Codex_*' -or -not $_.Path }) }
+    Stop-Process -Id $ids -Force -ErrorAction SilentlyContinue
     $deadline = (Get-Date).AddSeconds(10)
-    while ((Get-Date) -lt $deadline -and @(& $any).Count -gt 0) { Start-Sleep -Milliseconds 150 }
-    foreach ($gp in (& $any)) { & taskkill.exe /PID $gp.Id /F 2>&1 | Out-Null }
+    while ((Get-Date) -lt $deadline -and @(Get-Process -Id $ids -ErrorAction SilentlyContinue).Count -gt 0) {
+        Start-Sleep -Milliseconds 100
+    }
 }
 
 function Start-CodexStore {
@@ -553,6 +614,10 @@ function ConvertFrom-CodexSwitcherMessage {
     if ($type -eq 'depleted') {
         $value = $true
         if ($msg.PSObject.Properties['value'] -and $msg.value -is [bool]) { $value = [bool]$msg.value }
+    }
+    if ($type -eq 'switch') {
+        # Page says the normal signed-in UI is up, so a fast switch (same window) can be tried.
+        $value = [bool]($msg.PSObject.Properties['fast'] -and $msg.fast -is [bool] -and $msg.fast)
     }
     return (New-Result $type $target $name $value '')
 }

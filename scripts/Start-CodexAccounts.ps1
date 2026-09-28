@@ -176,17 +176,63 @@ function Restart-Codex {
     <#
     .SYNOPSIS
       Close Codex, run $Swap (auth.json changes happen while Codex is closed), reopen with CDP.
-      Codex is reopened even when $Swap fails, on whatever login is in place.
+      Codex is always reopened, whatever failed, on whatever login is in place.
     #>
     param([Parameter(Mandatory)] [scriptblock]$Swap)
     $t0 = Get-Date
-    Stop-CodexStore
-    $closed = ((Get-Date) - $t0).TotalSeconds
-    try { & $Swap }
+    $closed = 0
+    try {
+        Stop-CodexStore
+        $closed = ((Get-Date) - $t0).TotalSeconds
+        if (Test-CodexStoreRunning) { throw 'Codex did not close; the login was left as it was.' }
+        & $Swap
+    }
     finally {
         $codexPid = Start-CodexStore -Port $Port
         Write-HostLog ("restart: closed in {0:n1}s, reopened pid={1} after {2:n1}s" -f $closed, $codexPid, ((Get-Date) - $t0).TotalSeconds)
     }
+}
+
+function Invoke-LoginChange {
+    <#
+    .SYNOPSIS
+      Change the login Codex uses. Fast path: restart only the app-server, the window stays (2-3 s).
+      Fallback: restart Codex. $Swap must be safe to run twice. Returns $true when Codex was restarted
+      (the page is gone and must be attached again).
+    #>
+    param([Parameter(Mandatory)] [scriptblock]$Swap, [switch]$Full)
+    $t0 = Get-Date
+    if (-not $Full -and (Restart-CodexAppServer -Swap $Swap)) {
+        Write-HostLog ("fast switch: new app-server after {0:n1}s" -f ((Get-Date) - $t0).TotalSeconds)
+        return $false
+    }
+    if (-not $Full) { Write-HostLog 'fast switch unavailable; restarting Codex' }
+    Restart-Codex -Swap $Swap
+    return $true
+}
+
+function Complete-LoginChange {
+    <#
+    .SYNOPSIS
+      Run a login change for the page and report the outcome to it. Returns $true when Codex was
+      restarted (attach again).
+    #>
+    param([object[]]$Conns, [string]$Profile, [scriptblock]$Swap, [switch]$Add, [switch]$Full)
+    try { $restarted = Invoke-LoginChange -Swap $Swap -Full:$Full }
+    catch {
+        $what = $(if ($Add) { 'add' } else { 'switch' })
+        Write-HostLog ("{0} {1} failed: {2}" -f $what, $Profile, $_.Exception.Message)
+        if ($Add) { $script:Pending = ''; $script:PendingReturn = '' }
+        # The page may still be there (fast path) or come back after a restart: tell it both ways.
+        Send-PageToast $Conns 'error' "$what-failed" $Profile
+        $script:QueuedToast = @{ Level = 'error'; Code = "$what-failed"; Detail = $Profile }
+        return $false
+    }
+    if (-not $restarted) {
+        Send-PageState $Conns
+        Send-PageEvent $Conns @{ kind = 'switched'; profile = $Profile; add = [bool]$Add }
+    }
+    return $restarted
 }
 
 function Invoke-PageRequest {
@@ -218,12 +264,7 @@ function Invoke-PageRequest {
             $target = $req.Profile
             $script:Pending = ''
             $script:PendingReturn = ''
-            try { Restart-Codex -Swap { Set-CodexLiveAuth -Name $target -Root $Root -CodexHome $CodexHome } }
-            catch {
-                Write-HostLog ("switch failed: " + $_.Exception.Message)
-                $script:QueuedToast = @{ Level = 'error'; Code = 'switch-failed'; Detail = $target }
-            }
-            return $true
+            return (Complete-LoginChange -Conns $Conns -Profile $target -Full:(-not $req.Value) -Swap { Set-CodexLiveAuth -Name $target -Root $Root -CodexHome $CodexHome })
         }
         'add' {
             if ($busy) { return $false }
@@ -233,13 +274,8 @@ function Invoke-PageRequest {
             Send-PageEvent $Conns @{ kind = 'switching'; profile = $req.Name; add = $true }
             $script:Pending = $req.Name
             $script:PendingReturn = $(if ($active) { $active.Name } else { '' })
-            try { Restart-Codex -Swap { Clear-CodexLiveAuth -Root $Root -CodexHome $CodexHome } }
-            catch {
-                Write-HostLog ("add failed: " + $_.Exception.Message)
-                $script:Pending = ''
-                $script:QueuedToast = @{ Level = 'error'; Code = 'add-failed'; Detail = $req.Name }
-            }
-            return $true
+            # The sign-in screen only appears when Codex starts without a login: full restart.
+            return (Complete-LoginChange -Conns $Conns -Profile $req.Name -Add -Full -Swap { Clear-CodexLiveAuth -Root $Root -CodexHome $CodexHome })
         }
         'cancel-add' {
             if (-not $script:Pending) { return $false }
@@ -250,8 +286,8 @@ function Invoke-PageRequest {
             if (-not $back -or (Get-AuthIdentity -Path (Join-Path $CodexHome 'auth.json'))) { Send-PageState $Conns; return $false }
             $script:LastAction = Get-Date
             Send-PageEvent $Conns @{ kind = 'switching'; profile = $back }
-            Restart-Codex -Swap { Set-CodexLiveAuth -Name $back -Root $Root -CodexHome $CodexHome }
-            return $true
+            # Leaving the sign-in screen needs a restart as well.
+            return (Complete-LoginChange -Conns $Conns -Profile $back -Full -Swap { Set-CodexLiveAuth -Name $back -Root $Root -CodexHome $CodexHome })
         }
         'remove' {
             try { Remove-CodexAccount -Name $req.Profile -Root $Root -CodexHome $CodexHome }

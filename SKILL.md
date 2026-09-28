@@ -17,8 +17,8 @@ sharing or bypassing usage limits.
 - Each account = a saved copy of `~\.codex\auth.json` in `%LOCALAPPDATA%\CodexMultiProfile\accounts\<name>\auth.json`.
 - The **Codex** shortcut runs `Start-CodexAccounts.ps1` (hidden): it starts the Store Codex inside its
   package with DevTools on `127.0.0.1:9333`, injects `switcher-inject.js` and stays as the bridge.
-- Avatar menu (bottom-left) → **Accounts**: click = switch (Codex restarts in a few seconds on that login),
-  **Add account** (Codex reopens on the sign-in screen, the new login is saved under the chosen name),
+- Avatar menu (bottom-left) → **Accounts**: click = switch (2-3 s: only the codex.exe app-server restarts, the window
+  stays), **Add account** (Codex restarts on the sign-in screen, the new login is saved under the chosen name),
   pencil = rename, trash = remove. `Ctrl+Alt+A` opens the menu, `1`-`9` pick an account.
 - While Codex runs, the live `auth.json` is copied back into the account in use (Codex rotates refresh
   tokens; a stale copy would stop working).

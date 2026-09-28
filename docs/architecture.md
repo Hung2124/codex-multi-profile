@@ -20,8 +20,14 @@ Codex shortcut
 - `accounts.json`: last used / out-of-quota flags. `settings.json` (optional): `cdpPort`, `lang`.
 - **Sync.** Codex refreshes and rotates its tokens in `auth.json`. The helper copies the live file back into the account
   in use whenever it changes, and once more right before a switch. A saved copy that fell behind would stop working.
-- **Switch.** Close Codex → sync the outgoing account → copy the chosen `auth.json` in place (write + rename) → start Codex.
-- **Add.** Close Codex → sync → remove `~\.codex\auth.json` → start Codex (sign-in screen) → when a new login appears,
+- **Switch (fast, 2-3 s).** The login lives in the `codex.exe app-server` child, not in the window. End only the
+  app-server → sync the outgoing account → copy the chosen `auth.json` in place (write + rename) → Codex starts a new
+  app-server by itself and the open window picks the new account up (name, plan, limits) without a reload. If Codex
+  was quicker than the copy, that app-server is ended once more. Used when the page reports the normal signed-in UI.
+- **Switch (full).** From a sign-in screen, or when no new app-server shows up within 10 s: end Codex and its whole
+  process tree (one snapshot, `Stop-Process`, wait until every process is gone) → swap → start Codex. Codex is always
+  started again, whatever failed.
+- **Add.** Full restart (only a fresh start shows the sign-in screen): sync → remove `~\.codex\auth.json` → start Codex → when a new login appears,
   save it under the chosen name. A login that is not saved anywhere is never removed, and any new login seen while
   Codex runs is saved automatically.
 
@@ -39,8 +45,14 @@ instance is still exiting hangs on "The application is exiting and cannot servic
 
 - Closed shadow roots inside Codex's own menu; built with `createElement` only (no HTML strings, Trusted Types and
   CSP safe), no network calls. React keeps rendering its own rows.
-- Finds the avatar button by position / `aria-haspopup=menu` / image. If it cannot be found (sign-in screen, a future
-  Codex layout) a same-looking account button appears at the bottom-left instead.
+- Finds the avatar button by position / `aria-haspopup=menu` / image, and looks again only when it went away or the
+  window became visible. If it cannot be found (sign-in screen, a future Codex layout) a same-looking account button
+  appears at the bottom-left instead.
+- Light on Codex: menus are Radix portals appended to `<body>`, so only `<body>`'s direct children are observed, plus a
+  scan right after the avatar is clicked. The usage-limit watcher only queues small new nodes and checks them once a
+  second, so streaming replies do not cost anything noticeable.
+- Codex sends printable keys typed outside an editable element to its composer; the layer carries
+  `data-codex-character-input-boundary` (Codex's own opt-out) so typing in our dialogs stays there.
 - Talks to the helper only through the binding. Messages: `hello`, `refresh`, `switch`, `add`, `cancel-add`, `rename`,
   `remove`, `depleted`. The helper validates each one (`ConvertFrom-CodexSwitcherMessage`): fixed types, names
   `^[a-z0-9][a-z0-9-]{0,63}$` that must exist, 4 KB max.

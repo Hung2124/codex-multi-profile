@@ -55,6 +55,7 @@ switch ($Action) {
         $key = ConvertTo-AccountKey -Name $Name
         if (-not (Get-AuthIdentity -Path (Join-Path $Root "accounts\$key\auth.json"))) { throw "Unknown account '$key'." }
         Stop-CodexStore
+        if (@(Get-CodexStoreProcesses).Count) { throw 'Codex did not close; nothing was changed.' }
         Set-CodexLiveAuth -Name $key -Root $Root -CodexHome $CodexHome
         Write-CodexLog -Message "[cli] switched to $key" -Root $Root
         $launch = Get-CodexLauncherCommand -Root $Root

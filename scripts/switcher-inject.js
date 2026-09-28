@@ -36,7 +36,7 @@
       removeTip: 'Remove this account',
       renameTip: 'Rename',
       addTitle: 'Add account',
-      addBody: 'Codex restarts on the sign-in screen. Sign in with the other ChatGPT account and it is saved under this name. Your current account stays in the list.',
+      addBody: 'Codex shows its sign-in screen. Sign in with the other ChatGPT account and it is saved under this name. Your current account stays in the list.',
       addLabel: 'Account name',
       addPlaceholder: 'e.g. work',
       addSaves: 'Saved as {key}',
@@ -52,7 +52,7 @@
       renaming: 'Saving...',
       switching: 'Switching to {name}',
       switchingAdd: 'Opening sign-in for {name}',
-      switchingSub: 'Codex reopens by itself in a few seconds.',
+      switchingSub: 'Just a few seconds.',
       switchFailed: 'The switch did not finish. Try again.',
       pendingTitle: 'Sign in for {name}',
       pendingBody: 'Sign in with the ChatGPT account you want to save as {name}.',
@@ -63,6 +63,7 @@
       dismiss: 'Not now',
       toast_added: 'Saved {detail}. You are now using it.',
       toast_removed: 'Removed {detail}.',
+      toast_switched: 'Now using {detail}.',
       toast_renamed: 'Renamed to {detail}.',
       toast_exists: 'An account named {detail} already exists.',
       'toast_exists-as': 'That login is already saved as {detail}.',
@@ -88,7 +89,7 @@
       removeTip: 'Xoá tài khoản này',
       renameTip: 'Đổi tên',
       addTitle: 'Thêm tài khoản',
-      addBody: 'Codex sẽ mở lại ở màn hình đăng nhập. Đăng nhập tài khoản ChatGPT kia, nó sẽ được lưu với tên này. Tài khoản hiện tại vẫn giữ trong danh sách.',
+      addBody: 'Codex sẽ chuyển sang màn hình đăng nhập. Đăng nhập tài khoản ChatGPT kia, nó sẽ được lưu với tên này. Tài khoản hiện tại vẫn giữ trong danh sách.',
       addLabel: 'Tên tài khoản',
       addPlaceholder: 'vd: cong-viec',
       addSaves: 'Sẽ lưu thành {key}',
@@ -104,7 +105,7 @@
       renaming: 'Đang lưu...',
       switching: 'Đang chuyển sang {name}',
       switchingAdd: 'Đang mở đăng nhập cho {name}',
-      switchingSub: 'Codex sẽ tự mở lại sau vài giây.',
+      switchingSub: 'Chỉ mất vài giây.',
       switchFailed: 'Chuyển chưa xong. Thử lại nhé.',
       pendingTitle: 'Đăng nhập cho {name}',
       pendingBody: 'Đăng nhập tài khoản ChatGPT bạn muốn lưu thành {name}.',
@@ -115,6 +116,7 @@
       dismiss: 'Để sau',
       toast_added: 'Đã lưu {detail} và đang dùng nó.',
       toast_removed: 'Đã xoá {detail}.',
+      toast_switched: 'Đang dùng {detail}.',
       toast_renamed: 'Đã đổi tên thành {detail}.',
       toast_exists: 'Đã có tài khoản tên {detail}.',
       'toast_exists-as': 'Tài khoản này đã được lưu với tên {detail}.',
@@ -586,25 +588,31 @@
   }
 
   var scanQueued = false;
+  // Look for Codex's avatar button again only when the one we know is gone (cheap check first).
+  function refreshTrigger() {
+    if (S.trigger && S.trigger.isConnected) { return; }
+    var before = S.trigger;
+    S.trigger = findTrigger();
+    S.triggerSeenAt = Date.now();
+    if (!!before !== !!S.trigger) { render(); }
+  }
+
   function queueScan() {
     if (scanQueued) { return; }
     scanQueued = true;
-    requestAnimationFrame(function () {
+    setTimeout(function () {
       scanQueued = false;
       scanMenus();
-      var now = Date.now();
-      if (!S.trigger || !S.trigger.isConnected || now - S.triggerSeenAt > 4000) {
-        var before = S.trigger;
-        S.trigger = findTrigger();
-        S.triggerSeenAt = now;
-        if (!!before !== !!S.trigger) { render(); }
-      }
-    });
+      refreshTrigger();
+    }, 0);
   }
+
+  // The account menu mounts a moment after the avatar click; look right then instead of watching the whole DOM.
+  function scanSoon() { [0, 40, 120, 300].forEach(function (ms) { setTimeout(scanMenus, ms); }); }
 
   document.addEventListener('pointerdown', function (e) {
     var path = e.composedPath ? e.composedPath() : [];
-    if (S.trigger && path.indexOf(S.trigger) >= 0) { S.triggerClickAt = Date.now(); }
+    if (S.trigger && path.indexOf(S.trigger) >= 0) { S.triggerClickAt = Date.now(); scanSoon(); }
     if (S.menuOpen && layerHost && path.indexOf(layerHost) < 0) { S.menuOpen = false; render(); }
   }, true);
 
@@ -624,7 +632,10 @@
   function pickProfile(name) {
     var p = find(name);
     if (!p || p.active || S.switching) { return; }
-    if (!send({ type: 'switch', profile: name })) { showToast('error', t('offlineHint')); return; }
+    // Fast switch (new app-server, same window) only from the normal signed-in UI; from a sign-in
+    // screen Codex has to restart to leave it.
+    var fast = !!(S.trigger && S.trigger.isConnected) && !pendingAdd();
+    if (!send({ type: 'switch', profile: name, fast: fast })) { showToast('error', t('offlineHint')); return; }
     beginSwitching(name, false);
   }
   function openModal(m) {
@@ -733,8 +744,8 @@
   }
 
   function useFallback() {
-    // Only when Codex's own avatar button could not be found for a while.
-    return !S.trigger && Date.now() - S.startedAt > 5000;
+    // Only when Codex's own avatar button could not be found for a while (a hidden window has no layout).
+    return !S.trigger && Date.now() - S.startedAt > 5000 && document.visibilityState === 'visible';
   }
 
   function renderControl() {
@@ -926,6 +937,17 @@
       render();
     } else if (evt.kind === 'switching') {
       if (!S.switching) { beginSwitching(evt.profile || '', !!evt.add); }
+    } else if (evt.kind === 'switched') {
+      // Fast switch: the window stayed, Codex picked the new login up by itself.
+      clearTimeout(S.switchTimer);
+      S.switching = null;
+      S.modal = null;
+      if (!evt.add) {
+        S.flash = evt.profile; S.flashUntil = Date.now() + 2500;
+        refreshSections();
+        showToast('info', t('toast_switched', { detail: evt.profile }));
+      }
+      render();
     } else if (evt.kind === 'toast') {
       var code = String(evt.code || '');
       var detail = evt.detail || '';
@@ -946,6 +968,7 @@
         return;
       }
       if (code === 'unknown-profile') { send({ type: 'refresh' }); }
+      if (evt.level === 'error' && S.switching) { clearTimeout(S.switchTimer); S.switching = null; }
       if (m && m.busy) { m.busy = false; m.error = text; render(); return; }
       showToast(evt.level === 'error' ? 'error' : 'info', text);
     }
@@ -959,7 +982,7 @@
       if (S.modal || S.switching) { return; }
       if (S.trigger && S.trigger.isConnected) {
         if (S.nativeMenu && S.nativeMenu.isConnected) { closeNativeMenu(); }
-        else { S.triggerClickAt = Date.now(); S.trigger.click(); }
+        else { S.triggerClickAt = Date.now(); S.trigger.click(); scanSoon(); }
       } else {
         S.menuOpen = !S.menuOpen;
         if (S.menuOpen) { send({ type: 'refresh' }); }
@@ -985,38 +1008,55 @@
   }, true);
 
   window.addEventListener('resize', function () { if (layerRoot) { render(); } });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && layerRoot) { S.trigger = null; refreshTrigger(); render(); }
+  });
 
   /* ---------- observers ---------- */
   var themeObs = new MutationObserver(function () {
     if (layerRoot) { layerRoot.className = 'root t-' + pageTheme(); }
   });
 
-  /* Usage-limit hint: only newly added, short text. Suggest only, never auto-switch. */
-  var lastLimitScan = 0;
+  /* Usage-limit hint. Codex adds DOM all the time while it streams, so the observer only collects
+     small new nodes and checks them at most once a second; big subtrees (messages) are skipped. */
+  var limitCandidates = [];
+  var limitTimer = 0;
+  function limitWatching() {
+    return !S.limitHit && !S.switching && !!S.state && !!S.state.suggestion && Date.now() > S.limitDismissedUntil;
+  }
+  function checkLimitCandidates() {
+    limitTimer = 0;
+    var list = limitCandidates;
+    limitCandidates = [];
+    if (!limitWatching()) { return; }
+    for (var i = 0; i < list.length; i++) {
+      var n = list[i];
+      if (!n.isConnected) { continue; }
+      var txt = n.nodeType === 3 ? n.nodeValue : n.textContent;
+      if (txt && txt.length < 600 && LIMIT_RE.test(txt)) { S.limitHit = true; render(); return; }
+    }
+  }
   var limitObs = new MutationObserver(function (records) {
-    if (S.limitHit || S.switching || !S.state || !S.state.suggestion) { return; }
-    var now = Date.now();
-    if (now < S.limitDismissedUntil || now - lastLimitScan < 1500) { return; }
+    if (!limitWatching()) { return; }
     for (var i = 0; i < records.length; i++) {
       var added = records[i].addedNodes;
       for (var j = 0; j < added.length; j++) {
         var n = added[j];
-        if (isOurs(n)) { continue; }
-        var txt = n.nodeType === 3 ? n.nodeValue : (n.nodeType === 1 ? n.textContent : '');
-        if (txt && txt.length < 600 && LIMIT_RE.test(txt)) {
-          lastLimitScan = now;
-          S.limitHit = true;
-          render();
-          return;
+        if (n.nodeType === 3 ? n.nodeValue.length < 600 : (n.nodeType === 1 && n.childElementCount <= 12 && !isOurs(n))) {
+          if (limitCandidates.length < 200) { limitCandidates.push(n); }
         }
       }
     }
+    if (limitCandidates.length && !limitTimer) { limitTimer = setTimeout(checkLimitCandidates, 1000); }
   });
 
-  /* Menus open in portals: scan at most once per frame. Keep our layer attached. */
-  var domObs = new MutationObserver(function () {
+  /* Codex menus are portals appended to <body>: watching body's direct children is enough.
+     Also keeps our layer attached if something removes it. */
+  var domObs = new MutationObserver(function (records) {
     if (layerHost && !layerHost.isConnected) { layerHost = null; mountLayer(); }
-    queueScan();
+    for (var i = 0; i < records.length; i++) {
+      if (records[i].addedNodes.length) { queueScan(); return; }
+    }
   });
 
   function hello() {
@@ -1031,7 +1071,7 @@
     try {
       themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme', 'style'] });
       if (document.body) { themeObs.observe(document.body, { attributes: true, attributeFilter: ['class', 'data-theme', 'style'] }); }
-      domObs.observe(document.documentElement, { childList: true, subtree: true });
+      domObs.observe(document.body || document.documentElement, { childList: true });
       limitObs.observe(document.body || document.documentElement, { childList: true, subtree: true });
     } catch (e) { }
     queueScan();
@@ -1043,14 +1083,16 @@
       S.lastHello = 0;
       hello();
     }, 750);
-    // Decide about the fallback control once Codex had time to render its sidebar.
-    setTimeout(function () { S.triggerSeenAt = 0; queueScan(); render(); }, 5200);
+    // Decide about the fallback control once Codex had time to render its sidebar, then only
+    // look again when the avatar button went away (sign-in screen, re-render).
+    setTimeout(function () { S.trigger = null; refreshTrigger(); render(); }, 5200);
+    setInterval(refreshTrigger, 10000);
   }
 
   window.__cmpSwitcher = {
     receive: receive,
     open: function () {
-      if (S.trigger && S.trigger.isConnected) { S.triggerClickAt = Date.now(); S.trigger.click(); }
+      if (S.trigger && S.trigger.isConnected) { S.triggerClickAt = Date.now(); S.trigger.click(); scanSoon(); }
       else { S.menuOpen = true; render(); }
     },
     // Read-only summary for diagnostics (masked data only).

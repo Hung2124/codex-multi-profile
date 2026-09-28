@@ -20,8 +20,8 @@ Bấm avatar ở góc dưới bên trái Codex. Ngay dưới tên bạn có mụ
 
 | Trong menu | Tác dụng |
 |:---|:---|
-| Bấm một tài khoản | Chuyển sang tài khoản đó. Codex tự khởi động lại với tài khoản ấy (khoảng 10 giây) |
-| **Thêm tài khoản** | Codex mở lại ở màn hình đăng nhập; đăng nhập tài khoản kia là nó được lưu với tên bạn đặt |
+| Bấm một tài khoản | Chuyển sang tài khoản đó trong 2-3 giây, cửa sổ Codex giữ nguyên (nếu đang ở màn hình đăng nhập thì Codex khởi động lại, ~10 giây) |
+| **Thêm tài khoản** | Codex khởi động lại ở màn hình đăng nhập; đăng nhập tài khoản kia là nó được lưu với tên bạn đặt |
 | Bút chì / thùng rác (rê chuột vào dòng) | Đổi tên / xoá tài khoản đã lưu (không xoá được tài khoản đang dùng) |
 | Phím `1`-`9` khi menu đang mở | Chọn tài khoản theo số |
 | `Ctrl+Alt+A` | Mở menu từ bất kỳ đâu trong Codex |
@@ -52,7 +52,7 @@ $env:CODEX_MP_REMOVE_LEGACY = '1'; irm https://raw.githubusercontent.com/Hung212
 - **Đừng dùng "Đăng xuất" của Codex để đổi tài khoản.** Nó có thể làm hỏng bản đăng nhập đã lưu. Hãy dùng menu.
 - Tài khoản có đăng nhập đã hết hạn sẽ hiện màn hình đăng nhập sau khi chuyển. Đăng nhập lại đúng tài khoản đó là
   được lưu tự động. Góc dưới trái vẫn có nút tài khoản nhỏ để chuyển sang tài khoản khác.
-- Chữ đang gõ dở trong ô chat (chưa gửi) sẽ mất khi chuyển tài khoản (Codex khởi động lại).
+- Câu trả lời Codex đang viết dở sẽ dừng khi bạn chuyển tài khoản (đăng nhập thay đổi giữa chừng).
 - Trình hỗ trợ menu là một tiến trình PowerShell ẩn, chỉ chạy khi Codex mở (~130 MB, gần như không tốn CPU).
 
 ## Dòng lệnh

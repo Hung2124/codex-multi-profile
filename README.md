@@ -28,8 +28,8 @@ Click your avatar at the bottom-left of Codex. Under your name there is an **Acc
 
 | In the menu | Does |
 |:---|:---|
-| Click an account | Switches to it. Codex restarts by itself on that login (about 10 seconds) |
-| **Add account** | Codex reopens on its sign-in screen; sign in with the other account and it is saved under the name you typed |
+| Click an account | Switches to it in 2-3 seconds; the Codex window stays open (from a sign-in screen Codex restarts, ~10 s) |
+| **Add account** | Codex restarts on its sign-in screen; sign in with the other account and it is saved under the name you typed |
 | Pencil / trash (hover a row) | Rename / remove a saved account (the one in use cannot be removed) |
 | `1`-`9` while the menu is open | Pick the account with that number |
 | `Ctrl+Alt+A` | Open the menu from anywhere in Codex |
@@ -61,7 +61,7 @@ $env:CODEX_MP_REMOVE_LEGACY = '1'; irm https://raw.githubusercontent.com/Hung212
 - **Do not use Codex's own "Log out" to change account.** It can invalidate that account's saved login. Use the menu.
 - A saved login that expired shows Codex's sign-in screen after switching. Sign in with that account again and
   it is saved automatically. A small account button stays at the bottom-left there, so you can switch away.
-- Text typed in the composer but not sent is lost when switching (Codex restarts).
+- A reply Codex is still writing is stopped when you switch (its login changes under it).
 - The menu helper is a hidden PowerShell process that runs only while Codex is open (~130 MB, near-zero CPU).
 
 ## Command line (agents, scripts)

@@ -95,7 +95,10 @@ try {
     # --- page messages: fixed types, known names only
     $known = @('main', 'job')
     $ok = ConvertFrom-CodexSwitcherMessage -Payload '{"type":"switch","profile":"job"}' -KnownProfiles $known
-    Assert (-not $ok.Error -and $ok.Profile -eq 'job') 'valid switch'
+    Assert (-not $ok.Error -and $ok.Profile -eq 'job' -and $ok.Value -eq $false) 'valid switch (full restart by default)'
+    $fast = ConvertFrom-CodexSwitcherMessage -Payload '{"type":"switch","profile":"job","fast":true}' -KnownProfiles $known
+    Assert ($fast.Value -eq $true) 'fast switch flag passed through'
+    Assert ((ConvertFrom-CodexSwitcherMessage -Payload '{"type":"switch","profile":"job","fast":"yes"}' -KnownProfiles $known).Value -eq $false) 'non-bool fast flag ignored'
     Assert ((ConvertFrom-CodexSwitcherMessage -Payload '{"type":"switch","profile":"nope"}' -KnownProfiles $known).Error -eq 'unknown-profile') 'unknown profile'
     Assert ((ConvertFrom-CodexSwitcherMessage -Payload '{"type":"switch","profile":"..\\x"}' -KnownProfiles $known).Error -eq 'bad-profile') 'path in profile'
     Assert ((ConvertFrom-CodexSwitcherMessage -Payload '{"type":"exec","cmd":"calc"}' -KnownProfiles $known).Error -eq 'unknown-type') 'unknown type'
