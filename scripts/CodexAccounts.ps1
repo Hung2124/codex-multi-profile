@@ -54,6 +54,12 @@ switch ($Action) {
         if (-not $Name) { throw 'Use -Name <account>.' }
         $key = ConvertTo-AccountKey -Name $Name
         if (-not (Get-AuthIdentity -Path (Join-Path $Root "accounts\$key\auth.json"))) { throw "Unknown account '$key'." }
+        # Same fast path as the menu: only the app-server restarts, the Codex window stays.
+        if (Restart-CodexAppServer -Swap { Set-CodexLiveAuth -Name $key -Root $Root -CodexHome $CodexHome }) {
+            Write-CodexLog -Message "[cli] switched to $key (fast)" -Root $Root
+            "Switched to $key."
+            break
+        }
         Stop-CodexStore
         if (@(Get-CodexStoreProcesses).Count) { throw 'Codex did not close; nothing was changed.' }
         Set-CodexLiveAuth -Name $key -Root $Root -CodexHome $CodexHome

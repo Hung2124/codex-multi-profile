@@ -69,6 +69,7 @@
       'toast_exists-as': 'That login is already saved as {detail}.',
       'toast_bad-name': 'Use letters, numbers and dashes.',
       'toast_already-active': 'You are already on {detail}.',
+      toast_busy: 'Still finishing the last change. Try again in a moment.',
       'toast_add-failed': 'Could not add {detail}.',
       'toast_switch-failed': 'Could not switch to {detail}.',
       'toast_remove-failed': 'Could not remove {detail}. Switch to another account first.',
@@ -122,6 +123,7 @@
       'toast_exists-as': 'Tài khoản này đã được lưu với tên {detail}.',
       'toast_bad-name': 'Chỉ dùng chữ, số và gạch ngang.',
       'toast_already-active': 'Bạn đang dùng {detail} rồi.',
+      toast_busy: 'Đang xử lý thao tác trước, thử lại sau giây lát.',
       'toast_add-failed': 'Không thêm được {detail}.',
       'toast_switch-failed': 'Không chuyển được sang {detail}.',
       'toast_remove-failed': 'Không xoá được {detail}. Chuyển sang tài khoản khác trước.',
@@ -979,7 +981,7 @@
         return;
       }
       if (code === 'unknown-profile') { send({ type: 'refresh' }); }
-      if (evt.level === 'error' && S.switching) { clearTimeout(S.switchTimer); S.switching = null; }
+      if (S.switching && (evt.level === 'error' || code === 'busy' || code === 'already-active')) { clearTimeout(S.switchTimer); S.switching = null; }
       if (m && m.busy) { m.busy = false; m.error = text; render(); return; }
       showToast(evt.level === 'error' ? 'error' : 'info', text);
     }

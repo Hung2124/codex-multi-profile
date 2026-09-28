@@ -220,6 +220,7 @@ function Complete-LoginChange {
     param([object[]]$Conns, [string]$Profile, [scriptblock]$Swap, [switch]$Add, [switch]$Full)
     try { $restarted = Invoke-LoginChange -Swap $Swap -Full:$Full }
     catch {
+        $script:LastAction = Get-Date
         $what = $(if ($Add) { 'add' } else { 'switch' })
         Write-HostLog ("{0} {1} failed: {2}" -f $what, $Profile, $_.Exception.Message)
         if ($Add) { $script:Pending = ''; $script:PendingReturn = '' }
@@ -228,6 +229,8 @@ function Complete-LoginChange {
         $script:QueuedToast = @{ Level = 'error'; Code = "$what-failed"; Detail = $Profile }
         return $false
     }
+    # The double-click guard counts from the end of a change: a click queued while it ran is not a new request.
+    $script:LastAction = Get-Date
     if (-not $restarted) {
         Send-PageState $Conns
         Send-PageEvent $Conns @{ kind = 'switched'; profile = $Profile; add = [bool]$Add }
@@ -244,7 +247,8 @@ function Invoke-PageRequest {
         Send-PageToast $Conns 'error' $req.Error $req.Name
         return $false
     }
-    $busy = ((Get-Date) - $script:LastAction).TotalSeconds -lt 4
+    # Double-click guard. The page shows a waiting card, so always answer instead of ignoring.
+    $busy = ((Get-Date) - $script:LastAction).TotalSeconds -lt 1.5
     switch ($req.Type) {
         { $_ -in @('hello', 'refresh') } {
             Send-PageState $Conns
@@ -257,7 +261,7 @@ function Invoke-PageRequest {
         'switch' {
             $active = Get-CodexActiveAccount -Root $Root -CodexHome $CodexHome
             if ($active -and $active.Name -eq $req.Profile) { Send-PageToast $Conns 'info' 'already-active' $req.Profile; return $false }
-            if ($busy) { return $false }
+            if ($busy) { Send-PageToast $Conns 'info' 'busy'; return $false }
             $script:LastAction = Get-Date
             Write-HostLog ("switch {0} -> {1}" -f $(if ($active) { $active.Name } else { '(none)' }), $req.Profile)
             Send-PageEvent $Conns @{ kind = 'switching'; profile = $req.Profile }
@@ -267,7 +271,7 @@ function Invoke-PageRequest {
             return (Complete-LoginChange -Conns $Conns -Profile $target -Full:(-not $req.Value) -Swap { Set-CodexLiveAuth -Name $target -Root $Root -CodexHome $CodexHome })
         }
         'add' {
-            if ($busy) { return $false }
+            if ($busy) { Send-PageToast $Conns 'info' 'busy'; return $false }
             $script:LastAction = Get-Date
             $active = Get-CodexActiveAccount -Root $Root -CodexHome $CodexHome
             Write-HostLog ("add {0}: opening the sign-in screen" -f $req.Name)
@@ -371,6 +375,7 @@ function Invoke-AccountsHost {
     Write-HostLog ("host start port={0}" -f $Port)
 
     while ($true) {
+      try {
         $now = Get-Date
         # Attached: the socket closing tells us when the window goes, so look around rarely.
         if (($now - $lastDiscover).TotalSeconds -ge $(if ($conns.Count) { 15 } else { 1 })) {
@@ -446,6 +451,12 @@ function Invoke-AccountsHost {
                 $goneSince = $null
             }
         }
+      }
+      catch {
+        # Keep serving: one unexpected error must not leave the menu without its helper.
+        Write-HostLog ("loop error: " + $_.Exception.Message)
+        Start-Sleep -Milliseconds 500
+      }
     }
 
     foreach ($c in @($conns)) { Close-CdpConn $c }

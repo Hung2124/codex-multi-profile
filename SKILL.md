@@ -35,7 +35,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $cli rename -Name work -NewN
 powershell -NoProfile -ExecutionPolicy Bypass -File $cli remove -Name old
 ```
 
-`switch` closes Codex; tell the user before running it.
+`switch` restarts only Codex's app-server (2-3 s, the window stays) and stops a reply in progress; tell the user first.
 
 ## Rules
 
