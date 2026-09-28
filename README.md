@@ -8,256 +8,85 @@
 </p>
 
 <p align="center">
-  <strong>One Windows app to see and pick your ChatGPT accounts in Codex Desktop.<br>One shared workspace. One window (AuthSwap).</strong>
+  <strong>Switch ChatGPT accounts from the Codex avatar menu, in the Microsoft Store Codex app on Windows.</strong><br>
+  One app, one workspace: chats, projects, skills and settings stay shared.
 </p>
 
 <p align="center">
   <a href="README.vi.md">Tiếng Việt</a> &middot;
-  <a href="docs/in-app-switcher.md">Switch inside Codex</a> &middot;
-  <a href="docs/router.md">Router</a> &middot;
-  <a href="docs/recipes.md">Recipes</a> &middot;
+  <a href="docs/architecture.md">How it works</a> &middot;
   <a href="docs/troubleshooting.md">Troubleshooting</a> &middot;
   <a href="SUPPORT.md">Support</a>
 </p>
 
-<p align="center">
-  <img src="docs/images/hero.png" alt="Codex Multi-Profile -- MAIN and CODEX1 with AuthSwap" width="920">
-</p>
+> Unofficial helper, not affiliated with OpenAI. For people with more than one **authorized** ChatGPT account.
+> Not for account sharing or getting around usage limits.
 
-> Unofficial helper. Not affiliated with OpenAI. Needs [Codex Desktop](https://chatgpt.com/codex) from the Microsoft Store.
+## What you get
 
-## Pick an account
+Click your avatar at the bottom-left of Codex. Under your name there is an **Accounts** section:
 
-After install, open **Codex Accounts** on the Desktop. That is the product: a dark account list (name, masked email, last-used, depleted, sticky paths). Click a row or press Enter to launch that login via AuthSwap.
+| In the menu | Does |
+|:---|:---|
+| Click an account | Switches to it. Codex restarts by itself on that login (about 10 seconds) |
+| **Add account** | Codex reopens on its sign-in screen; sign in with the other account and it is saved under the name you typed |
+| Pencil / trash (hover a row) | Rename / remove a saved account (the one in use cannot be removed) |
+| `1`-`9` while the menu is open | Pick the account with that number |
+| `Ctrl+Alt+A` | Open the menu from anywhere in Codex |
+| Usage-limit card | When Codex says you hit your usage limit, it offers to switch to the next saved account |
 
-If a Codex window is already open, the app **closes it** and switches to the saved login. No password prompt when `auth.json` is present and not poisoned. First-run sign-in still happens inside Codex (this app does not collect a ChatGPT login).
-
-Agents keep using the CLI: `pool` / `stick` / `route` / `depleted`.
-
-## Switch without leaving Codex (new in 0.3.0)
-
-Turn on **Trong Codex** in Codex Accounts (or `CodexProfile.ps1 -Action switcher`). Then click **your avatar**
-at the bottom-left of Codex: the account menu now lists your saved accounts. Click one and Codex reopens on that
-login in a few seconds with the same chats and projects. **Add account** adds a row to the list, the trash icon
-removes one, and when Codex says you hit your usage limit it offers to switch.
-
-<p align="center">
-  <img src="docs/images/in-app-switcher.png" alt="Accounts section inside the Codex avatar menu" width="880">
-</p>
-
-Opt-in, clone-only, loopback-only, no `app.asar` / ChatGPT.exe patch. Details and security notes:
-[docs/in-app-switcher.md](docs/in-app-switcher.md).
-
-```powershell
-# install with the in-app switcher already on
-$env:CODEX_MP_INAPP = '1'; irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.ps1 | iex
-```
+The menu follows Codex's language (Vietnamese or English) and its light / dark theme.
 
 ## Install
 
-One command. It downloads this repo and runs the Windows installer (AuthSwap + Codex Accounts):
+Needs Windows 10/11, [Codex](https://chatgpt.com/codex) from the Microsoft Store, signed in once.
 
 ```powershell
 irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.ps1 | iex
 ```
 
-Until 0.2.0 is merged, that `main` URL still installs 0.1.4. Use the PR branch:
+This saves the account Codex is signed in to now as `main` and puts a **Codex** shortcut on the Desktop and
+in the Start menu. **Open Codex from that shortcut** (pin it to the taskbar instead of the original Codex
+icon): the original icon starts Codex without the account menu.
+
+Upgrading from the old clone-based version (Codex1 / Codex Main / Codex Accounts shortcuts)? This imports
+those saved logins and removes the old install and its cloned `ChatGPT.exe` copies:
 
 ```powershell
-irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/feature/windows-codex-accounts-app/install.ps1 | iex
+$env:CODEX_MP_REMOVE_LEGACY = '1'; irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.ps1 | iex
 ```
 
-That is the Windows counterpart of [b-nnett/codex-subscription-router](https://github.com/b-nnett/codex-subscription-router#install) `curl | bash` -- **without** patching ChatGPT.exe or unpacking `app.asar`.
+## Good to know
 
-1. Install Codex Desktop and sign in once (**main** account) if you have not already.
-2. Close every Codex window.
-3. Run the one-liner above (or clone + `scripts\Install-CodexMultiProfile.ps1`).
+- **Do not use Codex's own "Log out" to change account.** It can invalidate that account's saved login. Use the menu.
+- A saved login that expired shows Codex's sign-in screen after switching. Sign in with that account again and
+  it is saved automatically. A small account button stays at the bottom-left there, so you can switch away.
+- Text typed in the composer but not sent is lost when switching (Codex restarts).
+- The menu helper is a hidden PowerShell process that runs only while Codex is open (~130 MB, near-zero CPU).
 
-### Desktop shortcuts
-
-| Shortcut | What it does |
-|:---|:---|
-| **Codex Accounts** | See every login. Click / Enter to open that profile |
-| **Codex1** | Jump straight to the first secondary account |
-| **Codex Main** | Restore the original account and open Store Codex |
-| **Codex Profiles** | Legacy text picker |
-
-**Rule:** close one Codex UI before opening the other.
-
-From a git clone instead of the one-liner:
+## Command line (agents, scripts)
 
 ```powershell
-git clone https://github.com/Hung2124/codex-multi-profile.git
-cd codex-multi-profile
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-CodexMultiProfile.ps1
+$cli = "$env:LOCALAPPDATA\CodexMultiProfile\CodexAccounts.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File $cli list      # or: status | save -Name x | switch -Name x | rename -Name x -NewName y | remove -Name x | lang -Name vi
 ```
-
-Quick check after install:
-
-```powershell
-$m = "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1"
-powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action doctor
-powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action verify
-powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action pool
-```
-
-## Routing
-
-**Humans:** open **Codex Accounts**. **Agents:** `CodexProfile.ps1 -Action route` (and `pool` / `stick` / `depleted`).
-
-Windows routing in the spirit of b-nnett/codex-subscription-router. Still **one** Codex window because AuthSwap uses a single `~\.codex\auth.json`. Full table: [docs/router.md](docs/router.md).
-
-| Situation | Behaviour |
-|:---|:---|
-| New chat / new folder | Least-recently-used **non-depleted** profile |
-| Follow-up in the same git repo or workspace | Sticky owner |
-| Sticky owner marked depleted | Fail over to another non-depleted profile |
-| Every profile depleted | One combined message (masked emails). Nothing launches |
-| A Codex window is already open | Print the choice. Do not open a second window |
-
-```powershell
-$m = "$env:LOCALAPPDATA\CodexParallelDesktop\CodexProfile.ps1"
-powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action pool
-powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action stick -Name codex1
-powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action route
-powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action depleted -Name codex1
-powershell -NoProfile -ExecutionPolicy Bypass -File $m -Action depleted -Name codex1 -Disable
-```
-
-Use only **authorized personal / work accounts you own**. Marking `depleted` is a local flag. This is not a quota-bypass product and not a live multi-account mux.
-
-## Purpose and acceptable use
-
-This repository is a **local, open-source utility** for Windows developers who already hold **multiple authorized ChatGPT accounts** (for example personal and work) and need to switch between them in Codex Desktop while keeping one shared workspace.
-
-It is **not** intended for:
-
-- sharing one paid subscription across people or machines
-- bypassing rate limits, quotas, or billing
-- automating sign-in, scraping, or unofficial API access
-- any use that violates [OpenAI Terms of Use](https://openai.com/policies/terms-of-use)
-
-Use only accounts you own or are explicitly allowed to use. Changes that enable abuse are out of scope ([CONTRIBUTING.md](CONTRIBUTING.md)).
-
----
-
-## The problem
-
-A second `CODEX_HOME` often **does not** switch accounts. The Desktop app-server still reads `~\.codex\auth.json`, so you land on the main ChatGPT user.
-
-| You try... | What actually happens |
-|:---|:---|
-| Copy `~\.codex` + set `CODEX_HOME` | UI still shows the main account |
-| `Start-Process` with `$env:CODEX_HOME` | Env is dropped -> wrong account |
-| Run `ChatGPT.exe` from `WindowsApps` | Access Denied |
-| Launch `Codex.exe` | Process exits with code 1 |
-
-**AuthSwap** keeps sessions, skills, MCP, and memories in `~\.codex`. Only `auth.json` moves for the profile window, then restores on close.
-
-<p align="center">
-  <img src="docs/images/flow.png" alt="Open Codex1 -> swap auth.json -> secondary account; on close restore main" width="920">
-</p>
-
----
-
-## Usage
-
-Set `$root` once, then call the actions you need:
-
-```powershell
-$root = "$env:LOCALAPPDATA\CodexParallelDesktop"
-$m    = "$root\CodexProfile.ps1"
-```
-
-| Goal | Command |
-|:---|:---|
-| Open the account picker | `...\Show-CodexAccountApp.ps1` (or `-Action accounts`) |
-| Open secondary account | `...\Launch-CodexProfile.ps1 -Name codex1` |
-| Restore main + Store app | `...\Launch-CodexMain.ps1` |
-| Create `codex2` | `-Action new -Name codex2` |
-| List / status / doctor | `-Action list` / `status` / `doctor` |
-| Pool / stick / route / depleted | `-Action pool` / `stick` / `route` / `depleted` |
-| Repair stale AuthSwap lock | `-Action repair` |
-| Install file sync check | `-Action sync-check` |
-| JSON status | `-Action status -AsJson` |
-| Running processes | `-Action processes` |
-| Diagnostic bundle | `-Action diagnostics` |
-| Verify install | `-Action verify` |
-| Remove a profile | `-Action remove -Name codex2 -Force` |
-| In-app account switcher | `-Action switcher` / `switcher -Disable` (`-Lang vi`, `-CdpPort 9444`) |
-| Optional clone layer | `-Action layer` / `layer -Disable` |
-| Optional ChatGPT Web models | `-Action models` / `models -Disable` |
-| Safe bug-report log | `...\Redact-LaunchTrace.ps1` |
-| Update from git clone | `.\scripts\Update-CodexMultiProfile.ps1` |
-
-Existing 0.1.4 launch (Codex1 / Codex Main / doctor / verify / AuthSwap) is unchanged until you opt in to router, layer, or models.
-
-Tests (no Codex UI required):
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\Run-All.ps1
-```
-
-### Optional extras (off by default)
-
-- **In-app switcher** -- Accounts list in Codex's avatar menu (click to switch, add, remove; `Ctrl+Alt+A`) on the **cloned** Codex window. [docs/in-app-switcher.md](docs/in-app-switcher.md)
-- **Layer** -- badge, wider transcript, keep details open on the **cloned** ChatGPT.exe only. [docs/layer.md](docs/layer.md)
-- **ChatGPT Web models** -- write `~\.codex\config.toml` (UTF-8, no BOM) with `chatgpt-web/luna|light|medium|high|xhigh|pro` pointing at a local Responses bridge you already run on `127.0.0.1` (default `http://127.0.0.1:1455/v1`). This repo does **not** log you into chatgpt.com and does not ship or name a companion scraper.
-
----
-
-## Agent skill
-
-Install also copies `SKILL.md` to:
-
-- `%USERPROFILE%\.codex\skills\codex-multi-profile\`
-- `%USERPROFILE%\.cursor\skills\codex-multi-profile\`
-
-So Codex / Cursor agents know **not** to launch `Codex.exe`, **not** to use `WindowsApps`, and **not** to `Start-Process` without a `.cmd` wrapper.
-
----
-
-## Safety
-
-| Does | Does not |
-|:---|:---|
-| Copy `auth.json` **locally** between `~\.codex` and `profiles\<name>` | Upload tokens or set a permanent `CODEX_HOME` |
-| Clone `ChatGPT.exe` out of the Store package | Run the Store binary in-place |
-| Restore main auth on close; refuse to save if active email == main | Delete `~\.codex` history |
-| Choose among **your** profiles (sticky / LRU / depleted) | Mux many accounts in one window, patch asar, or bypass quotas |
-| Opt-in switcher UI in the clone over loopback CDP (masked emails only) | Touch the Store app, open a network listener, or switch accounts on its own |
-
-Do not commit `auth.json` or `*.bak`. Prefer `Redact-LaunchTrace.ps1` before pasting logs.
-
----
 
 ## Uninstall
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Uninstall-CodexMultiProfile.ps1
-# add -PurgeProfiles to also delete local profile auth copies
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexMultiProfile\Uninstall-CodexMultiProfile.ps1"   # add -RemoveAccounts to delete saved logins
 ```
 
-`~\.codex` is never deleted.
+`~\.codex` (chats, settings, the login in use) is never touched.
 
----
+## Privacy and security
 
-## Docs
-
-| Doc | Topic |
-|:---|:---|
-| [In-app switcher](docs/in-app-switcher.md) | Switch accounts from inside the Codex window |
-| [Router](docs/router.md) | Codex Accounts app + pool / stick / route / depleted |
-| [Layer](docs/layer.md) | Optional clone-only desktop tweaks |
-| [Architecture](docs/architecture.md) | Why AuthSwap exists |
-| [Troubleshooting](docs/troubleshooting.md) | Wrong account, locks, BOM |
-| [FAQ](docs/faq.md) | Common questions |
-| [Recipes](docs/recipes.md) | Daily command cards |
-| [Support](SUPPORT.md) | Before opening an issue |
-| [Changelog](CHANGELOG.md) | Releases |
-| [Contributing](CONTRIBUTING.md) | PR rules |
-| [Security](SECURITY.md) | Token handling |
+- Saved logins stay on this PC in `%LOCALAPPDATA%\CodexMultiProfile\accounts`. Nothing is sent anywhere.
+- The Codex window only ever receives masked emails (`ab***@example.com`), never tokens.
+- The menu talks to its helper through the Chrome DevTools protocol on `127.0.0.1` only. Other programs running
+  as you on this PC can reach that port too; if that matters on your machine, do not use this tool.
+- Codex files are not modified. See [docs/architecture.md](docs/architecture.md) and [SECURITY.md](SECURITY.md).
 
 ## License
 
-[MIT](LICENSE) © Hung Nguyen
+MIT

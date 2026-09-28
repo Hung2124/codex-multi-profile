@@ -9,3 +9,6 @@ launch-*-env.cmd
 Thumbs.db
 profiles/
 versions/
+accounts/
+accounts.json
+codex-accounts.log*

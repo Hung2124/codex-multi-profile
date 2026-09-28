@@ -2,24 +2,37 @@
 
 All notable changes to this project are documented here.
 
-## 0.3.0 — 2026-09-28
+## 0.4.0 — 2026-09-28
+
+Rebuilt around the Microsoft Store Codex. Codex 26.9xx refuses to run outside its package ("The process has no
+package identity"), so the cloned `ChatGPT.exe` the earlier versions launched no longer starts. This release
+replaces the unreleased 0.3.0 clone-based in-app switcher.
 
 ### Added
-- **In-app account switcher** (opt-in): click your avatar in Codex and the account menu lists your saved accounts under your identity row. Click one to switch (one-window AuthSwap via `Launch-CodexProfile.ps1 -FastSwitch`, Codex reopens in a few seconds); `1`-`9` pick by number; `Ctrl+Alt+A` opens the menu
-- **Add account** from that menu (Codex-style dialog, accents normalised: "Công việc" → `cong-viec`); the new account appears in the list at once with a **Sign in now** action
-- **Remove account** from that menu (trash on hover + confirm dialog); `Remove-CodexProfile` deletes the saved login, launchers, Desktop shortcut and router entries, never the active profile, never `~\.codex`
-- Styled with the current Codex (26.9xx) account-menu metrics and light / dark tokens; injected as a closed shadow root inside Codex's own menu, React keeps rendering its own rows. Falls back to a same-looking account control if the avatar button cannot be found
-- **Main account** row (opens the Store Codex after a confirm), usage-limit card that suggests the next saved, non-depleted login (suggestion only)
-- Vietnamese and English UI (auto from system, or `-Lang vi|en`)
-- `Start-CodexSwitcherHost.ps1`: hidden per-clone bridge. Checks the loopback CDP port is owned by the cloned ChatGPT.exe, talks over `Runtime.addBinding` (no HTTP listener, no token file), re-injects after renderer reloads, exits with the clone
-- `CodexProfile.ps1 -Action switcher` (`-Disable`, `-Lang`, `-CdpPort`), **Trong Codex** toggle in Codex Accounts, `Install-CodexMultiProfile.ps1 -EnableInAppSwitcher`, `install.ps1 -InApp` / `CODEX_MP_INAPP=1`
-- Router module: `Get-CodexSwitcherState`, `Set-CodexSwitcherEnabled`, `Get-CodexCdpLaunchPort`, `Get-CodexSwitcherSnapshot`, `ConvertFrom-CodexSwitcherMessage`, `Test-CodexTextHasFullEmail`, `Remove-CodexProfile`
-- `doctor` reports `switcher-on` / `switcher-missing`; `tests/InAppSwitcher.Tests.ps1`; `docs/in-app-switcher.md`
+- **Accounts in the Codex avatar menu** of the Store app: click an account to switch (Codex restarts on that login,
+  ~10 s), **Add account** (Codex reopens on its sign-in screen, the new login is saved under the chosen name),
+  rename (pencil) and remove (trash) on hover, `1`-`9`, `Ctrl+Alt+A`, usage-limit suggestion card
+- One **Codex** shortcut (Desktop + Start menu) that starts the Store Codex through `IApplicationActivationManager`
+  with DevTools on `127.0.0.1` and runs the hidden helper (`Start-CodexAccounts.ps1`) while Codex is open
+- Live token sync: the `auth.json` Codex refreshes is copied back into the account in use, so saved logins do not go stale
+- Any new login seen while Codex runs is saved automatically; a login that is not saved is never removed
+- Menu language follows Codex (`<html lang>`), Vietnamese or English
+- `CodexAccounts.ps1` CLI: `list`, `status`, `save`, `switch`, `rename`, `remove`, `lang`
+- `Install-CodexMultiProfile.ps1 -RemoveLegacy` / `CODEX_MP_REMOVE_LEGACY=1`: imports the logins saved by 0.1-0.2 and
+  removes `%LOCALAPPDATA%\CodexParallelDesktop` (junctions into `~\.codex` are unlinked, never followed)
 
 ### Changed
-- Launchers stop stale switcher hosts before a switch (`Stop-CodexSwitcherHosts`)
-- Uninstall also removes packaged `.js` files
-- Scripts renormalized to the CRLF line endings `.gitattributes` already asked for
+- Helper cost: no `Runtime.enable` / `Page.enable`, no JSON parsing of CDP replies, no WMI polling, work only when
+  `auth.json` or the store changes (~130 MB, ~1 s CPU per minute)
+- Shortcut runs through `conhost --headless` (no VBScript)
+
+### Removed
+- Cloned `ChatGPT.exe`, Codex1 / Codex Main launchers, AuthSwap watcher, Codex Accounts WPF app, router
+  (`pool` / `stick` / `route`), layer, ChatGPT Web model block, doctor / repair / diagnostics
+
+### Fixed
+- The helper found no Codex window on Windows PowerShell 5.1 (`ConvertFrom-Json` emits a JSON array as one object),
+  so the menu was never injected
 
 ## 0.2.0 — 2026-08-20
 

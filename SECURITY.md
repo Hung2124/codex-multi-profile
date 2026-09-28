@@ -1,15 +1,17 @@
 # Security
 
-This project launches a local clone of Codex Desktop and temporarily replaces
-`%USERPROFILE%\.codex\auth.json` with a per-profile copy.
+This project keeps a saved copy of `%USERPROFILE%\.codex\auth.json` per ChatGPT account under
+`%LOCALAPPDATA%\CodexMultiProfile\accounts\` and copies one of them back into `~\.codex` when you switch.
+It also starts the Store Codex with the Chrome DevTools protocol on `127.0.0.1` (see
+[docs/architecture.md](docs/architecture.md#security-notes)).
 
 ## Do not
 
 - Open an issue, PR, or gist that includes `auth.json`, `id_token`, or refresh tokens
-- Commit files under `%LOCALAPPDATA%\CodexParallelDesktop\profiles\`
-- Set a user-level `CODEX_HOME` that points at someone else's machine
+- Commit or share anything under `%LOCALAPPDATA%\CodexMultiProfile\accounts\`
+- Use this on a PC where untrusted programs run under your Windows account (they could reach the local DevTools port)
 
-`launch-trace.log` is written locally and **masks** ChatGPT emails (`al***@example.com`). Still do not paste the whole file if you are unsure — it can contain paths on your machine.
+`codex-accounts.log` is written locally and **masks** ChatGPT emails (`al***@example.com`).
 
 ## Report privately
 

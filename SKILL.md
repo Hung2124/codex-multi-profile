@@ -1,171 +1,46 @@
 ---
 name: codex-multi-profile
 description: >-
-  Windows Codex Desktop multi-account picker (Codex Accounts app) plus AuthSwap
-  launchers (codex1, codex2, ...). Humans pick accounts in Show-CodexAccountApp.ps1.
-  Opt-in in-app switcher (Accounts list in the Codex avatar menu: click to switch, add, remove; Ctrl+Alt+A).
-  Agents use pool / stick / route / depleted. ShareLive keeps history in ~/.codex;
-  only auth.json is per-profile. Launch MUST set env vars through a cmd wrapper.
-  Use for Codex clone, multi-account, ShareLive, wrong-account, or AuthSwap bugs.
+  Several ChatGPT logins for the Microsoft Store Codex app on Windows. The account list lives in
+  Codex's own avatar menu (switch, add, rename, remove); a CLI (CodexAccounts.ps1) does the same
+  for agents. One saved auth.json per account, chats and settings in ~/.codex are shared.
+  Use for Codex multi-account, wrong-account, switch-account or "account menu missing" questions.
 ---
 
-# Codex Multi-Profile (Windows)
+# Codex Multi-Profile (Windows, Store Codex)
 
-Unofficial helper for **Codex Desktop on Windows** when you need more than one **authorized** ChatGPT login and still want one shared workspace. Not for account sharing, quota bypass, or Terms-of-Use violations.
+Unofficial helper for people with more than one **authorized** ChatGPT account. Not for account
+sharing or bypassing usage limits.
 
-## Pick an account (humans)
+## How it works
 
-The product is **Codex Accounts** (`Show-CodexAccountApp.ps1`): a dark WPF window that lists profiles (masked email, last-used, depleted, sticky paths). Click a row launches `Launch-CodexProfile.ps1 -FastSwitch` (closes any open clone, uses saved auth.json, no password). This app does **not** implement chatgpt.com / device-code login; first-run still uses AuthSwap bootstrap inside Codex.
+- Each account = a saved copy of `~\.codex\auth.json` in `%LOCALAPPDATA%\CodexMultiProfile\accounts\<name>\auth.json`.
+- The **Codex** shortcut runs `Start-CodexAccounts.ps1` (hidden): it starts the Store Codex inside its
+  package with DevTools on `127.0.0.1:9333`, injects `switcher-inject.js` and stays as the bridge.
+- Avatar menu (bottom-left) → **Accounts**: click = switch (Codex restarts in a few seconds on that login),
+  **Add account** (Codex reopens on the sign-in screen, the new login is saved under the chosen name),
+  pencil = rename, trash = remove. `Ctrl+Alt+A` opens the menu, `1`-`9` pick an account.
+- While Codex runs, the live `auth.json` is copied back into the account in use (Codex rotates refresh
+  tokens; a stale copy would stop working).
 
-```powershell
-$root = "$env:LOCALAPPDATA\CodexParallelDesktop"
-powershell -NoProfile -STA -ExecutionPolicy Bypass -File "$root\Show-CodexAccountApp.ps1"
-# or
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action accounts
-```
-
-CLI `route` / `pool` / `stick` / `depleted` stay for agents.
-
-## Switch inside Codex (opt-in)
-
-`-Action switcher` (or **Trong Codex** in Codex Accounts) makes every profile launch start `Start-CodexSwitcherHost.ps1`: it attaches CDP on 127.0.0.1 to the **cloned** ChatGPT.exe, injects `switcher-inject.js` (adds an Accounts section to Codex's own avatar menu: click to switch, add, remove; `Ctrl+Alt+A`) and turns a pick into `Launch-CodexProfile.ps1 -FastSwitch`; remove uses `Remove-CodexProfile` (never the active profile). Same one-window AuthSwap; Codex restarts in a few seconds. No HTTP listener, no asar/exe patch, never the Store app. Details: [docs/in-app-switcher.md](docs/in-app-switcher.md).
+## CLI (agents)
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action switcher
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action switcher -Disable
+$cli = "$env:LOCALAPPDATA\CodexMultiProfile\CodexAccounts.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File $cli list            # -Json for machine output
+powershell -NoProfile -ExecutionPolicy Bypass -File $cli status
+powershell -NoProfile -ExecutionPolicy Bypass -File $cli save -Name work # save the login in use
+powershell -NoProfile -ExecutionPolicy Bypass -File $cli switch -Name work
+powershell -NoProfile -ExecutionPolicy Bypass -File $cli rename -Name work -NewName job
+powershell -NoProfile -ExecutionPolicy Bypass -File $cli remove -Name old
 ```
 
-## Default: ShareLive + AuthSwap
+`switch` closes Codex; tell the user before running it.
 
-| Piece | Where it lives |
-|---|---|
-| Sessions, skills, MCP, memories, projects | Always `%USERPROFILE%\.codex` |
-| Account | `profiles\<name>\auth.json`, swapped into `~\.codex\auth.json` at launch |
-| On close | Watcher saves secondary auth back, then restores main `auth.json` |
-| Electron UI | `--user-data-dir=profiles\<name>` (profile **root**, not a nested `electron\` folder) |
+## Rules
 
-Do **not** open the main Store Codex and a profile at the same time.
-
-## Why AuthSwap (not a second `CODEX_HOME`)
-
-The Desktop app-server sometimes **ignores** `CODEX_HOME` and reads `~\.codex\auth.json` anyway. A second home then shows the **main** account. AuthSwap puts the secondary token in the path the app actually reads.
-
-## Launch rules (verified)
-
-1. Do not run executables from `WindowsApps` (Access Denied). Clone `ChatGPT.exe` first.
-2. Entry point is **`ChatGPT.exe`**. `Codex.exe` exits 1.
-3. `Get-AppxPackage.InstallLocation` can be empty — prefer an existing local clone.
-4. Set **both** `CODEX_ELECTRON_USER_DATA_PATH` and `--user-data-dir` to the profile root.
-5. Do not rely on `Start-Process` inheriting `$env:CODEX_HOME`. Write a `.cmd` with `set` and `start`.
-6. PowerShell 5.1 `Set-Content -Encoding UTF8` writes a **BOM**. That can invalidate `config.toml`. Use `[IO.File]::WriteAllText(..., UTF8Encoding $false)`.
-7. Never set a persistent user-level `CODEX_HOME`.
-8. Never copy `auth.json` between machines or into git.
-
-## Paths
-
-| Item | Path |
-|---|---|
-| Install root | `%LOCALAPPDATA%\CodexParallelDesktop` |
-| Shared module | `CodexMultiProfile.psm1` |
-| Account picker | `Show-CodexAccountApp.ps1` (Desktop: **Codex Accounts**) |
-| In-app switcher | `Start-CodexSwitcherHost.ps1` + `switcher-inject.js` (opt-in, `switcher-state.json`) |
-| Profile launcher | `Launch-CodexProfile.ps1` |
-| Restore main | `Launch-CodexMain.ps1` |
-| Manager | `CodexProfile.ps1` (`accounts`, `new`, `list`, `status`, `doctor`, `pool`, `stick`, `route`, `depleted`, `switcher`, `layer`, `models`, …) |
-| Profiles | `...\profiles\<name>\` |
-| Clone | `...\versions\<ver>\app\ChatGPT.exe` |
-| Shared home | `%USERPROFILE%\.codex` |
-
-## Commands
-
-```powershell
-$root = "$env:LOCALAPPDATA\CodexParallelDesktop"
-
-# Recommended: account picker
-powershell -NoProfile -STA -ExecutionPolicy Bypass -File "$root\Show-CodexAccountApp.ps1"
-
-# Recommended launch (AuthSwap, one named profile)
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\Launch-CodexProfile.ps1" -Name codex1
-
-# Restore main Store Codex
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\Launch-CodexMain.ps1"
-
-# Manager
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action new -Name codex2
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action list
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action status
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action status -AsJson
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action doctor
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action processes
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action repair
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action sync-check
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action diagnostics
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action verify
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action stop -Name codex1
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action remove -Name codex2 -Force
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action pool
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action stick -Name codex1
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action route
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action depleted -Name codex1
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action layer
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action models
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action accounts
-```
-
-## Agent workflow
-
-1. Human wants to pick an account → `Show-CodexAccountApp.ps1` (or `-Action accounts`), or the Codex avatar menu if `-Action switcher` is on. Do not treat PowerShell `route` as the product UI.
-   "Switch inside Codex / without a separate app" → `-Action switcher`, then reopen the profile.
-2. "Switch account / keep my data" → AuthSwap via `Launch-CodexProfile.ps1`.
-3. "Create another profile" → `-Action new`, then launch with `Launch-CodexProfile.ps1`.
-4. Wrong account in the UI → compare emails in the two `auth.json` files; fix launch (cmd wrapper); do not tell the user to log in again if profile auth is still valid.
-5. Access Denied / empty path / exit 1 → clone `ChatGPT.exe`, never `WindowsApps`, never empty `InstallLocation`.
-6. After editing scripts, copy `CodexMultiProfile.psm1` **and** the launchers into `%LOCALAPPDATA%\CodexParallelDesktop` and into `scripts\` in this skill. Launchers import the module from `$PSScriptRoot`.
-7. "Is it installed / which account is active?" → `-Action status` (emails are masked) then `-Action doctor` / `-Action verify`.
-8. "Stuck on secondary account / stale lock" → `-Action repair` (close clones first).
-9. "Bug report" / safe GitHub log → `-Action diagnostics` or `Redact-LaunchTrace.ps1`.
-## Router (opt-in, one window)
-
-Humans pick in **Codex Accounts**. Agents use the actions below. Windows counterpart of b-nnett/codex-subscription-router **routing**, still AuthSwap (one `auth.json`).
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action pool
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action stick -Name codex1
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action route
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action depleted -Name codex1
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action depleted -Name codex1 -Disable
-```
-
-New work -> least-recently-used non-depleted profile. Same git repo -> sticky. Depleted owner -> failover. All depleted -> one message. If a Codex window is open, print the choice (do not launch a second window).
-
-In-app switcher, layer and ChatGPT Web models are **off by default**:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action layer
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action layer -Disable
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action models
-powershell -NoProfile -ExecutionPolicy Bypass -File "$root\CodexProfile.ps1" -Action models -Disable
-```
-
-Layer targets the cloned ChatGPT.exe only. Models only write `config.toml` (no BOM) for a local Responses bridge on 127.0.0.1. This repo does not log into chatgpt.com and does not name a companion app.
-
-## Poisoned profile auth
-
-
-If the user opens **Codex Main** while a profile is still running, restore can write the **main** token into `profiles\<name>\auth.json`.
-
-Guards already in the scripts:
-
-- Watcher / `Launch-CodexMain` only save profile auth when the active email **differs** from `auth.json.__main__`
-- Keep `auth.json.secondary.bak`
-- If profile auth is missing or equals main → bootstrap login (clear active auth, force secondary sign-in)
-
-## Do not
-
-- Copy or commit `auth.json`
-- Open main + profile ShareLive together
-- Launch `Codex.exe` or a `WindowsApps` path
-- `Start-Process` without an explicit cmd/`CODEX_HOME`
-- Write `config.toml` with `Set-Content -Encoding UTF8` on Windows PowerShell 5.1
-
-Details: [docs/architecture.md](docs/architecture.md), [docs/troubleshooting.md](docs/troubleshooting.md).
+- Never print or copy tokens; emails are shown masked (`ab***@domain`).
+- Do not use Codex's own **Log out** to change accounts: it can invalidate that login's saved copy. Use the menu.
+- The menu only appears when Codex was opened from the **Codex** shortcut (the original Store icon starts
+  Codex without the DevTools port). `status` says which one is running.
+- Log: `%LOCALAPPDATA%\CodexMultiProfile\codex-accounts.log` (masked).

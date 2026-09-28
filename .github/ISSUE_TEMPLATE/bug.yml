@@ -1,5 +1,5 @@
 name: Bug report
-description: Something broke while launching or swapping Codex accounts
+description: Something broke while opening Codex or switching accounts
 labels: [bug]
 body:
   - type: textarea
@@ -19,22 +19,22 @@ body:
     id: version
     attributes:
       label: codex-multi-profile version
-      description: Output of CodexProfile.ps1 -Action status (Version line) or the VERSION file
+      description: Output of CodexAccounts.ps1 status (Version line) or the VERSION file
       placeholder: 0.1.2
   - type: input
     id: app
     attributes:
       label: Codex Desktop version
-      placeholder: e.g. folder name under %LOCALAPPDATA%\CodexParallelDesktop\versions
+      placeholder: "e.g. 26.924.2738.0 (Codex (Store) line of CodexAccounts.ps1 status)"
   - type: textarea
     id: doctor
     attributes:
       label: doctor output
-      description: Run CodexProfile.ps1 -Action doctor and paste here (emails are already masked).
+      description: Run CodexAccounts.ps1 status and paste here (emails are already masked).
       render: text
   - type: textarea
     id: log
     attributes:
-      label: Redacted launch-trace.log or diagnostics bundle
-      description: Prefer CodexProfile.ps1 -Action diagnostics (or Redact-LaunchTrace.ps1). Do not paste auth.json or tokens.
+      label: Relevant lines of codex-accounts.log
+      description: From %LOCALAPPDATA%\CodexMultiProfile\codex-accounts.log (emails are masked). Do not paste auth.json or tokens.
       render: text

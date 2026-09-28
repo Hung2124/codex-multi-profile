@@ -1,12 +1,12 @@
 /* Codex Multi-Profile - in-app account switcher.
  *
- * Injected over CDP loopback (127.0.0.1) into the *cloned* ChatGPT.exe only by
- * Start-CodexSwitcherHost.ps1. Never patches app.asar or the Microsoft Store package.
+ * Injected over CDP loopback (127.0.0.1) into the Microsoft Store Codex main window by
+ * Start-CodexAccounts.ps1. Never patches app.asar or any file of the Store package.
  *
  * Where it shows up:
  *   - Native: when the Codex sidebar account menu (avatar, bottom-left) opens, an
- *     "Accounts" section is added right under your identity row: saved profiles
- *     (click = switch), Add account, and a remove button on hover.
+ *     "Accounts" section is added right under your identity row: saved accounts
+ *     (click = switch), Add account, and rename / remove buttons on hover.
  *   - Fallback: if that avatar button cannot be found, a small account control with
  *     the same look sits bottom-left and opens the same menu.
  *   - Ctrl+Alt+A opens it from anywhere.
@@ -26,100 +26,106 @@
   var I18N = {
     en: {
       accounts: 'Accounts',
-      offline: 'Switcher offline',
-      offlineHint: 'The helper is not connected. Reopen this profile from Codex Accounts.',
-      needsLogin: 'Not signed in yet',
+      offline: 'Accounts offline',
+      offlineHint: 'The account helper is not running. Open Codex from the Codex shortcut.',
+      needsLogin: 'Sign-in needed',
       depleted: 'Out of quota',
       current: 'Current',
       add: 'Add account',
-      main: 'Main account',
-      mainSub: 'Store app',
-      openApp: 'Manage in Codex Accounts',
       remove: 'Remove',
       removeTip: 'Remove this account',
+      renameTip: 'Rename',
       addTitle: 'Add account',
-      addBody: 'Give the new account a name. Then pick it in the list and sign in to that ChatGPT account inside Codex, once.',
+      addBody: 'Codex restarts on the sign-in screen. Sign in with the other ChatGPT account and it is saved under this name. Your current account stays in the list.',
       addLabel: 'Account name',
       addPlaceholder: 'e.g. work',
       addSaves: 'Saved as {key}',
-      addBtn: 'Add',
-      adding: 'Adding...',
+      addBtn: 'Continue',
+      adding: 'Opening sign-in...',
       cancel: 'Cancel',
       removeTitle: 'Remove {name}?',
-      removeBody: 'This deletes the saved login for {name} on this PC. Your chats, projects and settings in ~/.codex stay as they are. You can add it again any time.',
+      removeBody: 'This deletes the saved login for {name} on this PC. Chats, projects and settings in ~/.codex stay as they are. You can add it again any time.',
       removeBtn: 'Remove',
       removing: 'Removing...',
-      mainTitle: 'Open your main account?',
-      mainBody: 'This window closes and Codex from the Microsoft Store opens with your main account. The account list is not available there; use Codex Accounts to come back.',
-      mainBtn: 'Open main account',
+      renameTitle: 'Rename {name}',
+      renameBtn: 'Save',
+      renaming: 'Saving...',
       switching: 'Switching to {name}',
-      switchingMain: 'Opening your main account',
+      switchingAdd: 'Opening sign-in for {name}',
       switchingSub: 'Codex reopens by itself in a few seconds.',
-      switchFailed: 'The switch did not finish. Try again or open Codex Accounts.',
+      switchFailed: 'The switch did not finish. Try again.',
+      pendingTitle: 'Sign in for {name}',
+      pendingBody: 'Sign in with the ChatGPT account you want to save as {name}.',
+      pendingCancel: 'Cancel, go back',
       limitTitle: '{name} hit its usage limit',
       limitBody: 'Switch to {next} and keep going?',
       limitSwitch: 'Switch to {next}',
       dismiss: 'Not now',
-      signInNow: 'Sign in now',
-      toast_added: 'Added {detail}.',
+      toast_added: 'Saved {detail}. You are now using it.',
       toast_removed: 'Removed {detail}.',
+      toast_renamed: 'Renamed to {detail}.',
       toast_exists: 'An account named {detail} already exists.',
+      'toast_exists-as': 'That login is already saved as {detail}.',
       'toast_bad-name': 'Use letters, numbers and dashes.',
       'toast_already-active': 'You are already on {detail}.',
       'toast_add-failed': 'Could not add {detail}.',
-      'toast_remove-active': 'Switch to another account before removing {detail}.',
-      'toast_remove-failed': 'Could not remove {detail}.',
+      'toast_switch-failed': 'Could not switch to {detail}.',
+      'toast_remove-failed': 'Could not remove {detail}. Switch to another account first.',
+      'toast_rename-failed': 'Could not rename {detail}.',
       'toast_unknown-profile': 'That account no longer exists.',
-      'toast_host-error': 'Something went wrong. See launch-trace.log.',
+      'toast_host-error': 'Something went wrong. See codex-accounts.log.',
       toast_generic: 'Request rejected ({code}).'
     },
     vi: {
       accounts: 'Tài khoản',
       offline: 'Chưa kết nối',
-      offlineHint: 'Trình hỗ trợ chưa kết nối. Mở lại nick này từ Codex Accounts.',
-      needsLogin: 'Chưa đăng nhập',
+      offlineHint: 'Trình quản lý tài khoản chưa chạy. Mở Codex bằng shortcut Codex.',
+      needsLogin: 'Cần đăng nhập lại',
       depleted: 'Hết lượt',
       current: 'Đang dùng',
       add: 'Thêm tài khoản',
-      main: 'Tài khoản chính',
-      mainSub: 'bản Store',
-      openApp: 'Quản lý trong Codex Accounts',
       remove: 'Xoá',
       removeTip: 'Xoá tài khoản này',
+      renameTip: 'Đổi tên',
       addTitle: 'Thêm tài khoản',
-      addBody: 'Đặt tên cho tài khoản mới. Sau đó chọn nó trong danh sách và đăng nhập tài khoản ChatGPT đó ngay trong Codex (chỉ một lần).',
+      addBody: 'Codex sẽ mở lại ở màn hình đăng nhập. Đăng nhập tài khoản ChatGPT kia, nó sẽ được lưu với tên này. Tài khoản hiện tại vẫn giữ trong danh sách.',
       addLabel: 'Tên tài khoản',
       addPlaceholder: 'vd: cong-viec',
       addSaves: 'Sẽ lưu thành {key}',
-      addBtn: 'Thêm',
-      adding: 'Đang thêm...',
+      addBtn: 'Tiếp tục',
+      adding: 'Đang mở đăng nhập...',
       cancel: 'Huỷ',
       removeTitle: 'Xoá {name}?',
       removeBody: 'Thông tin đăng nhập đã lưu của {name} trên máy này sẽ bị xoá. Lịch sử chat, project và cài đặt trong ~/.codex vẫn giữ nguyên. Bạn có thể thêm lại bất cứ lúc nào.',
       removeBtn: 'Xoá',
       removing: 'Đang xoá...',
-      mainTitle: 'Mở tài khoản chính?',
-      mainBody: 'Cửa sổ này sẽ đóng và Codex bản Microsoft Store mở với tài khoản chính. Bản đó không có danh sách đổi nick; dùng Codex Accounts để quay lại.',
-      mainBtn: 'Mở tài khoản chính',
+      renameTitle: 'Đổi tên {name}',
+      renameBtn: 'Lưu',
+      renaming: 'Đang lưu...',
       switching: 'Đang chuyển sang {name}',
-      switchingMain: 'Đang mở tài khoản chính',
+      switchingAdd: 'Đang mở đăng nhập cho {name}',
       switchingSub: 'Codex sẽ tự mở lại sau vài giây.',
-      switchFailed: 'Chuyển chưa xong. Thử lại hoặc mở Codex Accounts.',
+      switchFailed: 'Chuyển chưa xong. Thử lại nhé.',
+      pendingTitle: 'Đăng nhập cho {name}',
+      pendingBody: 'Đăng nhập tài khoản ChatGPT bạn muốn lưu thành {name}.',
+      pendingCancel: 'Huỷ, quay lại',
       limitTitle: '{name} đã chạm giới hạn sử dụng',
       limitBody: 'Chuyển sang {next} để làm tiếp?',
       limitSwitch: 'Chuyển sang {next}',
       dismiss: 'Để sau',
-      signInNow: 'Đăng nhập ngay',
-      toast_added: 'Đã thêm {detail}.',
+      toast_added: 'Đã lưu {detail} và đang dùng nó.',
       toast_removed: 'Đã xoá {detail}.',
+      toast_renamed: 'Đã đổi tên thành {detail}.',
       toast_exists: 'Đã có tài khoản tên {detail}.',
+      'toast_exists-as': 'Tài khoản này đã được lưu với tên {detail}.',
       'toast_bad-name': 'Chỉ dùng chữ, số và gạch ngang.',
       'toast_already-active': 'Bạn đang dùng {detail} rồi.',
       'toast_add-failed': 'Không thêm được {detail}.',
-      'toast_remove-active': 'Chuyển sang nick khác trước khi xoá {detail}.',
-      'toast_remove-failed': 'Không xoá được {detail}.',
+      'toast_switch-failed': 'Không chuyển được sang {detail}.',
+      'toast_remove-failed': 'Không xoá được {detail}. Chuyển sang tài khoản khác trước.',
+      'toast_rename-failed': 'Không đổi tên được {detail}.',
       'toast_unknown-profile': 'Tài khoản đó không còn nữa.',
-      'toast_host-error': 'Có lỗi xảy ra. Xem launch-trace.log.',
+      'toast_host-error': 'Có lỗi xảy ra. Xem codex-accounts.log.',
       toast_generic: 'Yêu cầu bị từ chối ({code}).'
     }
   };
@@ -132,8 +138,8 @@
 
   var S = {
     state: null,
-    modal: null,          // { kind: 'add'|'remove'|'main', profile, value, busy, error }
-    switching: null,      // { profile, main }
+    modal: null,          // { kind: 'add'|'remove'|'rename', profile, value, busy, error }
+    switching: null,      // { profile, add }
     switchTimer: 0,
     toast: null,          // { level, text, action }
     toastTimer: 0,
@@ -157,8 +163,9 @@
   function lang() {
     var pref = S.state && S.state.lang;
     if (pref === 'vi' || pref === 'en') { return pref; }
-    var nav = (navigator.language || 'en').toLowerCase();
-    return nav.indexOf('vi') === 0 ? 'vi' : 'en';
+    // Codex sets <html lang> to its UI language; navigator.language is the OS/Chromium default.
+    var ui = (document.documentElement.lang || navigator.language || 'en').toLowerCase();
+    return ui.indexOf('vi') === 0 ? 'vi' : 'en';
   }
   function t(key, vars) {
     var table = I18N[lang()] || I18N.en;
@@ -196,10 +203,8 @@
     var s = String(raw || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
     return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64);
   }
-  function mainAvailable() {
-    var m = S.state && S.state.mainAccount;
-    return !!m && m !== 'MISSING' && m !== 'PARSE_ERR';
-  }
+  // Sign-in screen for an account being added (Codex has no avatar there).
+  function pendingAdd() { return !!(S.state && S.state.pending && !S.state.signedIn); }
 
   /* ---------- DOM helpers (createElement only) ---------- */
   function h(tag, props, kids) {
@@ -225,8 +230,7 @@
     check: ['M4.5 10.5l3.5 3.5 7.5-8'],
     plus: ['M10 4.5v11M4.5 10h11'],
     trash: ['M4.5 6h11', 'M8 6V4.8c0-.4.3-.8.8-.8h2.4c.5 0 .8.4.8.8V6', 'M6 6l.6 8.7c.1.8.7 1.3 1.5 1.3h3.8c.8 0 1.4-.5 1.5-1.3L14 6'],
-    home: ['M3.8 9.2L10 4l6.2 5.2', 'M5.5 8v7.2c0 .5.4.8.8.8h7.4c.5 0 .8-.3.8-.8V8'],
-    window: ['M3.5 5.5c0-.6.4-1 1-1h11c.6 0 1 .4 1 1v9c0 .6-.4 1-1 1h-11c-.6 0-1-.4-1-1z', 'M3.5 8h13'],
+    pencil: ['M12.8 4.2l3 3L8 15H5v-3z', 'M11.3 5.7l3 3'],
     alert: ['M10 7.5v3.2', 'M10 13.4v.1', 'M8.7 3.8L2.9 14c-.6 1 .1 2.2 1.3 2.2h11.6c1.2 0 1.9-1.2 1.3-2.2L11.3 3.8c-.6-1-2-1-2.6 0z'],
     x: ['M5.5 5.5l9 9M14.5 5.5l-9 9'],
     chevron: ['M6.5 8.5L10 12l3.5-3.5']
@@ -255,8 +259,7 @@
     for (var i = 0; i < name.length; i++) { x = ((x << 5) - x + name.charCodeAt(i)) | 0; }
     return PALETTE[Math.abs(x) % PALETTE.length];
   }
-  function avatar(name, kind) {
-    if (kind === 'main') { return h('span', { class: 'av av-ico' }, [icon('home', 12)]); }
+  function avatar(name) {
     var n = name || '?';
     var el = h('span', { class: 'av', text: n.charAt(0).toUpperCase() });
     el.style.background = colorFor(n);
@@ -336,7 +339,7 @@
     '.del{display:none;width:26px;height:26px;margin:-4px -4px -4px 0;border:0;border-radius:10px;background:transparent;',
     'color:var(--fg2);align-items:center;justify-content:center;cursor:pointer}',
     '.row:hover .del,.row:focus-within .del{display:inline-flex}.row:hover .kbd,.row:focus-within .kbd{display:none}',
-    '.del:hover{color:var(--danger);background:var(--hover)}',
+    '.del:hover{color:var(--danger);background:var(--hover)}.ren{margin-right:0}.ren:hover{color:var(--fg)}',
     '.del:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}',
     '.div{height:9px;padding:4px 8px}.div>span{display:block;height:1px;background:var(--line)}',
     '.off{padding:4px 8px 8px;font-size:12px;line-height:16px;color:var(--fg2)}'
@@ -443,6 +446,10 @@
       var sub = p.needsLogin ? t('needsLogin') : p.account;
       var nameLine = h('span', { class: 'nm' }, [h('b', { text: p.name }), p.depleted ? h('span', { class: 'tag', text: t('depleted') }) : null]);
       var end = h('span', { class: 'end' });
+      var ren = h('button', { class: 'del ren', type: 'button', title: t('renameTip'), 'aria-label': t('renameTip') + ' ' + p.name }, [icon('pencil', 16)]);
+      ren.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); opts.onRename(p.name); });
+      ren.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+      end.appendChild(ren);
       if (cur) {
         end.appendChild(h('span', { class: 'chk', title: t('current') }, [icon('check', 16)]));
       } else {
@@ -466,15 +473,6 @@
       }
       list.appendChild(row);
     });
-    if (mainAvailable()) {
-      var mrow = h('div', { class: 'row', role: 'menuitem', tabindex: '0', 'data-main': 'true' }, [
-        avatar('', 'main'),
-        h('span', { class: 'txt' }, [h('span', { class: 'nm' }, [h('b', { text: t('main') })]), h('span', { class: 'em', text: S.state.mainAccount + ' · ' + t('mainSub') })])
-      ]);
-      mrow.addEventListener('click', function () { opts.onMain(); });
-      mrow.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); opts.onMain(); } });
-      list.appendChild(mrow);
-    }
     sec.appendChild(list);
     var add = h('div', { class: 'row one', role: 'menuitem', tabindex: '0', 'data-add': 'true' }, [h('span', { class: 'ico' }, [icon('plus', 16)]), h('span', { class: 'txt', text: t('add') })]);
     add.addEventListener('click', function () { opts.onAdd(); });
@@ -490,7 +488,7 @@
       onPick: function (name) { closeFirst(); pickProfile(name); },
       onRemove: function (name) { closeFirst(); openModal({ kind: 'remove', profile: name }); },
       onAdd: function () { closeFirst(); openModal({ kind: 'add', value: '' }); },
-      onMain: function () { closeFirst(); openModal({ kind: 'main' }); }
+      onRename: function (name) { closeFirst(); openModal({ kind: 'rename', profile: name, value: name }); }
     };
   }
 
@@ -611,8 +609,8 @@
   }, true);
 
   /* ---------- actions ---------- */
-  function beginSwitching(profile, main) {
-    S.switching = { profile: profile, main: main };
+  function beginSwitching(profile, add) {
+    S.switching = { profile: profile, add: !!add };
     S.menuOpen = false;
     S.modal = null;
     clearTimeout(S.switchTimer);
@@ -628,10 +626,6 @@
     if (!p || p.active || S.switching) { return; }
     if (!send({ type: 'switch', profile: name })) { showToast('error', t('offlineHint')); return; }
     beginSwitching(name, false);
-  }
-  function doMain() {
-    if (!send({ type: 'main' })) { showToast('error', t('offlineHint')); return; }
-    beginSwitching('', true);
   }
   function openModal(m) {
     S.menuOpen = false;
@@ -652,14 +646,20 @@
       if (!key) { m.error = t('toast_bad-name'); render(); return; }
       if (find(key)) { m.error = t('toast_exists', { detail: key }); render(); return; }
       m.busy = true; m.error = ''; m.key = key;
-      send({ type: 'add', name: key });
+      if (!send({ type: 'add', name: key })) { m.busy = false; m.error = t('offlineHint'); }
+      render();
+    } else if (m.kind === 'rename') {
+      var nk = toKey(m.value);
+      if (!nk) { m.error = t('toast_bad-name'); render(); return; }
+      if (nk === m.profile) { closeModal(); return; }
+      if (find(nk)) { m.error = t('toast_exists', { detail: nk }); render(); return; }
+      m.busy = true; m.error = '';
+      send({ type: 'rename', profile: m.profile, name: nk });
       render();
     } else if (m.kind === 'remove') {
       m.busy = true; m.error = '';
       send({ type: 'remove', profile: m.profile });
       render();
-    } else if (m.kind === 'main') {
-      doMain();
     }
   }
   function showToast(level, text, action) {
@@ -758,9 +758,7 @@
 
   function renderFallbackMenu() {
     var menu = h('div', { class: 'menu', role: 'menu', 'aria-label': t('accounts') });
-    var manage = h('div', { class: 'row one', role: 'menuitem', tabindex: '0' }, [h('span', { class: 'ico' }, [icon('window', 16)]), h('span', { class: 'txt', text: t('openApp') })]);
-    manage.addEventListener('click', function () { send({ type: 'accounts' }); S.menuOpen = false; render(); });
-    menu.appendChild(buildSection(Object.assign({ divider: false, extra: [manage] }, sectionActions(function () { S.menuOpen = false; }))));
+    menu.appendChild(buildSection(Object.assign({ divider: false }, sectionActions(function () { S.menuOpen = false; }))));
     // Anchored above the control, like Codex anchors its account menu above the avatar.
     var left = ctlEl ? ctlEl.offsetLeft - 1 : 9;
     menu.style.left = Math.max(8, Math.min(left, window.innerWidth - 314)) + 'px';
@@ -775,10 +773,12 @@
     var dlg = h('div', { class: 'dlg', role: 'dialog', 'aria-modal': 'true', tabindex: '-1' });
     var foot = h('div', { class: 'foot' });
     var cancel = h('button', { class: 'btn', type: 'button', text: t('cancel'), disabled: m.busy ? true : null, onclick: closeModal });
-    if (m.kind === 'add') {
-      dlg.setAttribute('aria-label', t('addTitle'));
-      dlg.appendChild(h('h2', { text: t('addTitle') }));
-      dlg.appendChild(h('p', { class: 'desc', text: t('addBody') }));
+    if (m.kind === 'add' || m.kind === 'rename') {
+      var isAdd = m.kind === 'add';
+      var title = isAdd ? t('addTitle') : t('renameTitle', { name: m.profile });
+      dlg.setAttribute('aria-label', title);
+      dlg.appendChild(h('h2', { text: title }));
+      if (isAdd) { dlg.appendChild(h('p', { class: 'desc', text: t('addBody') })); }
       var field = h('input', { class: 'field' + (m.error ? ' bad' : ''), id: 'cmp-add-name', placeholder: t('addPlaceholder'), maxlength: '48', spellcheck: 'false', autocomplete: 'off' });
       field.value = m.value || '';
       var hint = h('div', { class: 'hint' + (m.error ? ' err' : '') });
@@ -797,7 +797,7 @@
       dlg.appendChild(h('div', { class: 'body' }, [h('label', { for: 'cmp-add-name', text: t('addLabel') }), field, hint]));
       foot.appendChild(cancel);
       foot.appendChild(h('button', { class: 'btn pri', type: 'button', disabled: m.busy ? true : null, onclick: submitModal },
-        [m.busy ? h('span', { class: 'bspin' }) : null, m.busy ? t('adding') : t('addBtn')]));
+        [m.busy ? h('span', { class: 'bspin' }) : null, m.busy ? (isAdd ? t('adding') : t('renaming')) : (isAdd ? t('addBtn') : t('renameBtn'))]));
     } else if (m.kind === 'remove') {
       dlg.setAttribute('aria-label', t('removeTitle', { name: m.profile }));
       dlg.appendChild(h('h2', { text: t('removeTitle', { name: m.profile }) }));
@@ -806,12 +806,6 @@
       foot.appendChild(cancel);
       foot.appendChild(h('button', { class: 'btn danger', type: 'button', disabled: m.busy ? true : null, onclick: submitModal },
         [m.busy ? h('span', { class: 'bspin' }) : null, m.busy ? t('removing') : t('removeBtn')]));
-    } else {
-      dlg.setAttribute('aria-label', t('mainTitle'));
-      dlg.appendChild(h('h2', { text: t('mainTitle') }));
-      dlg.appendChild(h('p', { class: 'desc', text: t('mainBody') }));
-      foot.appendChild(cancel);
-      foot.appendChild(h('button', { class: 'btn pri', type: 'button', onclick: submitModal }, [t('mainBtn')]));
     }
     dlg.appendChild(foot);
     dlg.addEventListener('keydown', function (e) {
@@ -836,7 +830,7 @@
     var sw = S.switching;
     return h('div', { class: 'backdrop', role: 'alert', 'aria-live': 'assertive' }, [
       h('div', { class: 'card' }, [h('span', { class: 'spin' }), h('div', {}, [
-        h('div', { class: 't1', text: sw.main ? t('switchingMain') : t('switching', { name: sw.profile }) }),
+        h('div', { class: 't1', text: sw.add ? t('switchingAdd', { name: sw.profile }) : t('switching', { name: sw.profile }) }),
         h('div', { class: 't2', text: t('switchingSub') })])])
     ]);
   }
@@ -877,6 +871,21 @@
     return el;
   }
 
+  function renderPending() {
+    var name = S.state.pending;
+    var el = h('div', { class: 'limit', role: 'status' }, [
+      h('div', { class: 't1' }, [h('span', {}, [icon('plus', 16)]), t('pendingTitle', { name: name })]),
+      h('div', { class: 't2', text: t('pendingBody', { name: name }) }),
+      h('div', { class: 'foot' }, [
+        h('button', { class: 'btn sm', type: 'button', text: t('pendingCancel'), onclick: function () {
+          if (send({ type: 'cancel-add' })) { beginSwitching('', false); }
+        } })
+      ])
+    ]);
+    if (ctlEl) { el.style.bottom = (window.innerHeight - ctlEl.offsetTop + 8) + 'px'; }
+    return el;
+  }
+
   function render() {
     if (!layerRoot) { return; }
     if (S.dragging) { S.renderPending = true; return; }
@@ -891,6 +900,7 @@
       layerRoot.appendChild(ctlEl);
       if (S.menuOpen) { layerRoot.appendChild(renderFallbackMenu()); }
     }
+    if (pendingAdd() && !S.switching && !S.modal) { layerRoot.appendChild(renderPending()); }
     if (S.limitHit && !S.switching && !S.modal && Date.now() > S.limitDismissedUntil) {
       var lim = renderLimit();
       if (lim) { layerRoot.appendChild(lim); }
@@ -912,7 +922,7 @@
       refreshSections();
       render();
     } else if (evt.kind === 'switching') {
-      if (!S.switching) { beginSwitching(evt.profile || '', !!evt.main); }
+      if (!S.switching) { beginSwitching(evt.profile || '', !!evt.add); }
     } else if (evt.kind === 'toast') {
       var code = String(evt.code || '');
       var detail = evt.detail || '';
@@ -924,11 +934,11 @@
         if (m && m.kind === 'add') { S.modal = null; }
         S.flash = detail; S.flashUntil = Date.now() + 2500;
         refreshSections();
-        showToast('info', text, { label: t('signInNow'), run: function () { pickProfile(detail); } });
+        showToast('info', text);
         return;
       }
-      if (code === 'removed') {
-        if (m && m.kind === 'remove') { S.modal = null; }
+      if (code === 'removed' || code === 'renamed') {
+        if (m && (m.kind === 'remove' || m.kind === 'rename')) { S.modal = null; }
         showToast('info', text);
         return;
       }
@@ -1048,7 +1058,7 @@
         sections: S.sections.filter(function (s) { return s.host.isConnected; }).length,
         fallback: useFallback(), menuOpen: S.menuOpen, modal: S.modal ? S.modal.kind : null,
         modalError: S.modal ? (S.modal.error || null) : null,
-        switching: S.switching ? (S.switching.main ? 'main' : S.switching.profile) : null,
+        switching: S.switching ? S.switching.profile : null, pending: S.state ? S.state.pending : null,
         limitHit: S.limitHit, active: act ? act.name : null, profiles: profiles().length,
         names: profiles().map(function (p) { return p.name; }), toast: S.toast ? S.toast.text : null
       };

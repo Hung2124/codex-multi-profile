@@ -1,16 +1,16 @@
 # AGENTS.md
 
-This repository is a **Windows-only** Codex Desktop multi-account helper.
+Windows-only helper: several ChatGPT logins for the **Microsoft Store Codex**, switched from the Codex avatar menu.
 
-- Read `SKILL.md` before changing launch behavior.
-- Never commit `auth.json`, backups, or `launch-trace.log`.
-- Do not replace the `.cmd` env wrapper with `Start-Process` alone.
-- Write `config.toml` without a UTF-8 BOM.
-- Run `tests/Run-All.ps1` after script edits.
-
-- Router (`pool` / `stick` / `route` / `depleted`) is opt-in and must stay one-window AuthSwap. Do not add a mux or ChatGPT.exe patcher.
-- Layer and ChatGPT Web models stay off by default.
-
-- Humans pick accounts in `Show-CodexAccountApp.ps1` (Codex Accounts) or, when enabled, the Accounts section the in-app switcher adds to the Codex avatar menu (cloned window only). Do not treat PowerShell `route` as the product UI.
-- The in-app switcher (`Start-CodexSwitcherHost.ps1` + `switcher-inject.js`) is opt-in, clone-only, loopback CDP only, talks through a CDP binding (no HTTP listener), sends masked emails only, and switches through `Launch-CodexProfile.ps1 -FastSwitch`. Keep page input validated with `ConvertFrom-CodexSwitcherMessage` and keep the injected DOM free of HTML strings.
-- The account app must stay PowerShell 5.1 WPF (no extra SDK), reuse CodexRouter.psm1, Hide-AuthEmail, and never Start-Process ChatGPT.exe without the existing .cmd wrapper.
+- Read `SKILL.md` and `docs/architecture.md` before changing launch or switch behavior.
+- Start the Store Codex only through `Start-CodexStore` (IApplicationActivationManager). Do not copy / clone
+  `ChatGPT.exe` (26.9xx needs package identity), do not use `Invoke-CommandInDesktopPackage` or `shell:AppsFolder`
+  (both hang from a normal process), do not patch Codex files.
+- Keep the helper cheap: no `Runtime.enable` / `Page.enable`, no JSON parsing of CDP replies, no WMI in the loop.
+- Page input goes through `ConvertFrom-CodexSwitcherMessage`. Only masked emails reach the page. The injected
+  script builds DOM with `createElement` only (tests enforce this).
+- Never drop a login that is not saved (`Clear-CodexLiveAuth` refuses). Sync the live `auth.json` into its account
+  before replacing it.
+- `.ps1` / `.psm1` files stay ASCII (Windows PowerShell 5.1 reads BOM-less UTF-8 as ANSI). Remember that
+  `ConvertFrom-Json` on 5.1 emits a JSON array as one object in a pipeline: assign it first.
+- Never commit `auth.json`, the `accounts` folder or logs. Run `tests/Run-All.ps1` after edits.
