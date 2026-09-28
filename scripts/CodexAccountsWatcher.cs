@@ -65,16 +65,33 @@ static class CodexAccountsWatcher
             if (!first) { return; }
             string root = AppDomain.CurrentDomain.BaseDirectory;
             string hostScript = Path.Combine(root, "Start-CodexAccounts.ps1");
-            DateTime lastStart = DateTime.MinValue;
+            DateTime lastStart = DateTime.MinValue, hostSeen = DateTime.MinValue;
+            int quickExits = 0;
+            bool judged = true;
             while (File.Exists(hostScript))
             {
                 try
                 {
-                    // The helper needs ~20 s to reopen Codex and attach; do not start a second one meanwhile.
-                    if (StoreCodexRunning() && !HostRunning() && (DateTime.UtcNow - lastStart).TotalSeconds > 20)
+                    DateTime now = DateTime.UtcNow;
+                    if (HostRunning())
                     {
-                        lastStart = DateTime.UtcNow;
-                        StartHost(hostScript);
+                        hostSeen = now;
+                        if ((now - lastStart).TotalMinutes > 2) { quickExits = 0; }
+                    }
+                    else if (StoreCodexRunning())
+                    {
+                        // A helper that ended within a minute of its start did not manage (port taken, ...):
+                        // wait longer each time, up to 10 minutes, instead of retrying every 20 s forever.
+                        if (!judged && (hostSeen - lastStart).TotalSeconds < 60) { quickExits++; }
+                        judged = true;
+                        double wait = Math.Min(600, 20 * Math.Pow(2, Math.Min(quickExits, 5)));
+                        if ((now - lastStart).TotalSeconds > wait)
+                        {
+                            lastStart = now;
+                            hostSeen = now;
+                            judged = false;
+                            StartHost(hostScript);
+                        }
                     }
                 }
                 catch { }

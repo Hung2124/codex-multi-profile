@@ -459,6 +459,8 @@ function Invoke-AccountsHost {
                         $c = Connect-CdpTarget -Target $t -Source $source
                         [void]$conns.Add($c)
                         Write-HostLog ("attached {0}" -f $t.id)
+                        # A reopen that gave Codex its menu port worked: clear the no-loop mark.
+                        Remove-Item -LiteralPath (Join-Path $Root 'last-reopen.txt') -ErrorAction SilentlyContinue
                         Send-PageState @($c)
                     }
                     catch { Write-HostLog ("attach failed: " + $_.Exception.Message) }
@@ -573,6 +575,15 @@ function Start-CodexWithAccounts {
         }
         if (-not (Test-CodexStoreHasCdp -Port $Port)) {
             if (@(Get-CodexStoreProcesses).Count -gt 0) {
+                # Never a restart loop: if the last reopen did not give Codex its menu port, leave Codex alone
+                # for a while (port taken by another program, a Codex build that ignores the argument, ...).
+                $mark = Join-Path $Root 'last-reopen.txt'
+                $last = Get-Item -LiteralPath $mark -ErrorAction SilentlyContinue
+                if ($last -and ((Get-Date) - $last.LastWriteTime).TotalMinutes -lt 10) {
+                    Write-HostLog 'Codex is still without the account menu after a reopen; not reopening again for 10 minutes'
+                    return
+                }
+                Set-Content -LiteralPath $mark -Value (Get-Date -Format o)
                 Write-HostLog 'Codex was opened without the account menu; reopening it'
                 Stop-CodexStore
             }

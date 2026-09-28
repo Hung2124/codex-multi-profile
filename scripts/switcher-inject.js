@@ -26,8 +26,8 @@
   var I18N = {
     en: {
       accounts: 'Accounts',
-      offline: 'Accounts offline',
-      offlineHint: 'The account helper is not running. Open Codex from the Codex shortcut.',
+      offline: 'Reconnecting',
+      offlineHint: 'Reconnecting the account helper... If it takes long, open Codex from the Codex shortcut.',
       needsLogin: 'Sign-in needed',
       depleted: 'Out of quota',
       current: 'Current',
@@ -85,8 +85,8 @@
     },
     vi: {
       accounts: 'Tài khoản',
-      offline: 'Chưa kết nối',
-      offlineHint: 'Trình quản lý tài khoản chưa chạy. Mở Codex bằng shortcut Codex.',
+      offline: 'Đang kết nối lại',
+      offlineHint: 'Đang kết nối lại trình quản lý tài khoản... Nếu lâu quá, mở Codex bằng shortcut Codex.',
       needsLogin: 'Cần đăng nhập lại',
       depleted: 'Hết lượt',
       current: 'Đang dùng',
