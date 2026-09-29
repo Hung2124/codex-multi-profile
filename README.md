@@ -40,7 +40,8 @@ Click your avatar at the bottom-left of Codex. Under your name there is an **Acc
 | Usage bars | Under each account: what is left of its limits (5h and week on paid plans, month on free), green / amber / red; hover for the reset time. Refreshed when you open the menu (at most once a minute) |
 | Usage-limit card | When Codex says you hit your usage limit, it offers to switch to the next saved account |
 
-The menu follows Codex's language (Vietnamese or English) and its light / dark theme.
+The menu follows the language Codex shows (Vietnamese; English for every other language), even when Windows uses
+another one, and Codex's light / dark theme.
 
 <p align="center">
   <img src="docs/images/add-account.png" alt="Add account dialog" width="560">

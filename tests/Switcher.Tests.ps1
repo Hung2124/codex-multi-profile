@@ -45,6 +45,7 @@ foreach ($type in @("type: 'switch'", "type: 'add'", "type: 'remove'", "type: 'r
 }
 Assert (-not $js.Contains("type: 'main'")) 'no clone-era main row'
 Assert ($js.Contains("'data-codex-character-input-boundary'")) 'dialog inputs opt out of Codex type-to-focus'
+Assert ($js.Contains('if (noteUiLang(menu))') -and $js.Contains('if (S.uiLang) { return S.uiLang; }')) 'menu language follows the text Codex shows, not only <html lang>'
 
 # The page script must be read as a plain string: a Get-Content string carries PSProvider/PSDrive note properties
 # that ConvertTo-Json -Depth 8 serializes into GBs (the helper hung after every Codex reload).

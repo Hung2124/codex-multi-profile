@@ -16,6 +16,6 @@ Log: `%LOCALAPPDATA%\CodexMultiProfile\codex-accounts.log` (masked, safe to past
 | "That login is already saved as ..." after Add account | You signed in with an account that is already in the list; nothing was added |
 | The switch card stays for more than ~25 s | See the log: `restart:` lines show how long closing and reopening took. Open Codex from the shortcut again |
 | Port 9333 is used by something else | `settings.json` in the install folder: `{ "cdpPort": 9444 }`, then reopen Codex from the shortcut |
-| Menu language | `CodexAccounts.ps1 lang -Name vi` (or `en`, `auto` = follow Codex) |
+| Menu language | `auto` (default) follows the language of Codex's own avatar menu, not Windows'. To force one: `CodexAccounts.ps1 lang -Name vi` (or `en`, `auto`) |
 
 Never paste `auth.json` or anything from the `accounts` folder into an issue.

@@ -32,7 +32,8 @@ Bấm avatar ở góc dưới bên trái Codex. Ngay dưới tên bạn có mụ
 | Thanh mức sử dụng | Dưới mỗi tài khoản: phần còn lại của các giới hạn (5h và Tuần với gói trả phí, Tháng với gói free), xanh / vàng / đỏ; rê chuột để xem giờ đặt lại. Cập nhật khi mở menu (tối đa 1 lần/phút) |
 | Thẻ hết lượt | Khi Codex báo hết giới hạn sử dụng, gợi ý chuyển sang tài khoản kế tiếp |
 
-Menu theo ngôn ngữ của Codex (Việt/Anh) và theo giao diện sáng/tối.
+Menu theo đúng ngôn ngữ Codex đang hiển thị (Codex tiếng Việt thì menu tiếng Việt, ngôn ngữ khác thì tiếng Anh), kể cả khi
+Windows dùng ngôn ngữ khác, và theo giao diện sáng/tối.
 
 <sub>Ảnh minh hoạ dùng tài khoản giả, được dựng từ chính <code>switcher-inject.js</code> bằng
 <code>node tools/screenshots/capture.mjs</code>.</sub>

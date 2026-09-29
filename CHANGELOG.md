@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here.
 
+## Unreleased
+
+### Fixed
+- Menu language now follows the language Codex actually shows (read from the **Log out** row of its avatar menu and
+  remembered), not only `<html lang>` / the Windows language: an English Codex on a Vietnamese Windows gets the
+  English menu, a Vietnamese Codex gets the Vietnamese one. Other Codex languages get English. `lang -Name vi|en` still wins
+
 ## 0.4.0 — 2026-09-28
 
 Rebuilt around the Microsoft Store Codex. Codex 26.9xx refuses to run outside its package ("The process has no

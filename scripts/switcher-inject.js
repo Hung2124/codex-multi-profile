@@ -22,6 +22,7 @@
 
   var BINDING = 'cmpSwitcherBridge';
   var POS_KEY = 'cmpSwitcher.pos.v2';
+  var UI_LANG_KEY = 'cmpSwitcher.uiLang';
 
   var I18N = {
     en: {
@@ -149,6 +150,7 @@
   var LIMIT_RE = /(you(?:'|’)ve hit your usage limit|you have hit your usage limit|usage limit reached|đã đạt giới hạn sử dụng)/i;
   // Last row of the Codex account menu, in a few UI languages.
   var LOGOUT_RE = /^\s*(log ?out|sign ?out|đăng xuất|abmelden|se déconnecter|cerrar sesión|sair|esci|退出登录|登出|ログアウト|로그아웃)/i;
+  var LOGOUT_VI_RE = /^\s*đăng xuất/i;
 
   var S = {
     state: null,
@@ -170,14 +172,32 @@
     startedAt: Date.now(),
     lastHello: 0,
     dragging: false,
-    renderPending: false
+    renderPending: false,
+    uiLang: loadUiLang()  // 'vi' | 'en' | null: language of Codex's own UI, read from its menu text
   };
 
   /* ---------- basics ---------- */
+  function loadUiLang() {
+    try { var v = localStorage.getItem(UI_LANG_KEY); return v === 'vi' || v === 'en' ? v : null; } catch (e) { return null; }
+  }
+  // Codex's UI language, read from the last row of its account menu ("Log out" / "Dang xuat" / ...).
+  // Any language other than Vietnamese gets the English menu. Returns true when it changed.
+  function noteUiLang(menu) {
+    var items = menu.querySelectorAll('[role="menuitem"]');
+    var txt = items.length ? String(items[items.length - 1].textContent || '').normalize('NFC') : '';
+    if (!LOGOUT_RE.test(txt)) { return false; }
+    var ui = LOGOUT_VI_RE.test(txt) ? 'vi' : 'en';
+    if (ui === S.uiLang) { return false; }
+    S.uiLang = ui;
+    try { localStorage.setItem(UI_LANG_KEY, ui); } catch (e) { }
+    return true;
+  }
   function lang() {
     var pref = S.state && S.state.lang;
     if (pref === 'vi' || pref === 'en') { return pref; }
-    // Codex sets <html lang> to its UI language; navigator.language is the OS/Chromium default.
+    // What Codex itself shows wins: <html lang> can be a fixed default that ignores Codex's language setting.
+    if (S.uiLang) { return S.uiLang; }
+    // Before the account menu was ever opened: <html lang>, then the OS/Chromium language.
     var ui = (document.documentElement.lang || navigator.language || 'en').toLowerCase();
     return ui.indexOf('vi') === 0 ? 'vi' : 'en';
   }
@@ -613,6 +633,7 @@
   }
 
   function injectInto(menu) {
+    if (noteUiLang(menu)) { refreshSections(); render(); }
     for (var i = 0; i < S.sections.length; i++) {
       if (S.sections[i].menu === menu && S.sections[i].host.isConnected) { return; }
     }
@@ -1192,7 +1213,7 @@
         fallback: useFallback(), menuOpen: S.menuOpen, modal: S.modal ? S.modal.kind : null,
         modalError: S.modal ? (S.modal.error || null) : null,
         switching: S.switching ? S.switching.profile : null, pending: S.state ? S.state.pending : null,
-        limitHit: S.limitHit, active: act ? act.name : null, profiles: profiles().length,
+        limitHit: S.limitHit, lang: lang(), uiLang: S.uiLang, active: act ? act.name : null, profiles: profiles().length,
         names: profiles().map(function (p) { return p.name; }), toast: S.toast ? S.toast.text : null
       };
     },
