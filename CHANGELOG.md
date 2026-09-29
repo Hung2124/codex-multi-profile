@@ -32,6 +32,8 @@ replaces the unreleased 0.3.0 clone-based in-app switcher.
 - Shortcut runs through `conhost --headless` (no VBScript)
 - Page script is event-driven: observes only `<body>`'s direct children (Codex menus are portals) and scans right after
   the avatar click; the usage-limit watcher batches small nodes once a second (no work per streamed token)
+- Never a restart loop: Codex is reopened for its menu port at most once per 10 minutes unless the last reopen
+  worked, and the watcher waits longer after each helper that ends within a minute (20 s doubling up to 10 min)
 - Closing Codex ends its whole process tree with `Stop-Process` from one snapshot and never throws; Codex is always
   started again after a failed switch
 
