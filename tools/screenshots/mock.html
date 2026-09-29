@@ -1,0 +1,90 @@
+<!doctype html>
+<!-- Stand-in for the Codex window, used only to take README screenshots with made-up accounts.
+     The Accounts section is drawn by the real scripts/switcher-inject.js. See capture.mjs. -->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; height: 100%; background: #181818; color: #fff; font: 13px/18px "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+  .app { position: absolute; inset: 0; display: flex; }
+  .rail { width: 52px; background: #181818; }
+  .side { width: 300px; background: #1f1f1f; border-radius: 16px 0 0 16px; margin: 8px 0 8px 0; padding: 14px 10px; box-sizing: border-box; }
+  .side h1 { font-size: 20px; font-weight: 600; margin: 4px 8px 16px; }
+  .side .new { background: #2a2a2a; border-radius: 10px; padding: 8px 10px; margin-bottom: 18px; }
+  .side .lbl { color: rgba(255,255,255,.45); margin: 10px 8px 6px; }
+  .side .it { padding: 7px 10px; border-radius: 8px; color: rgba(255,255,255,.9); }
+  .main { flex: 1; background: #212121; margin: 8px 8px 8px 0; border-radius: 0 16px 16px 0; display: flex; align-items: center; justify-content: center; }
+  .main h2 { font-weight: 400; font-size: 26px; color: rgba(255,255,255,.92); }
+  .avatar { position: fixed; left: 8px; bottom: 10px; width: 36px; height: 36px; border: 0; border-radius: 50%; padding: 0; background: transparent; cursor: pointer; }
+  .avatar img, .ava img { width: 100%; height: 100%; border-radius: 50%; display: block; }
+  [role=menu] { position: fixed; left: 56px; bottom: 12px; width: 286px; padding: 4px; box-sizing: border-box; border-radius: 20px;
+                background: rgba(45,45,45,.94); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); box-shadow: 0 8px 32px rgba(0,0,0,.45), inset 0 0 0 .5px rgba(255,255,255,.08); }
+  [role=menuitem] { display: flex; align-items: center; gap: 10px; min-height: 29px; padding: 0 10px; border-radius: 12px; color: rgba(255,255,255,.92); }
+  [role=menuitem].id { min-height: 43px; padding: 4px 10px; background: rgba(255,255,255,.06); }
+  [role=menuitem].id small { display: block; color: rgba(255,255,255,.55); font-size: 12px; line-height: 14px; }
+  [role=menuitem] .k { margin-left: auto; color: rgba(255,255,255,.45); }
+  .ava { width: 22px; height: 22px; flex: none; }
+  .ico { width: 16px; text-align: center; color: rgba(255,255,255,.75); }
+  .ico::before { content: attr(data-i); }
+  .menu-separator { height: 9px; padding: 0 10px; display: flex; align-items: center; }
+  .menu-separator span { height: 1px; flex: 1; background: rgba(255,255,255,.08); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="rail"></div>
+  <div class="side">
+    <h1>Codex</h1>
+    <div class="new" id="t-new"></div>
+    <div class="lbl" id="t-projects"></div>
+    <div class="it">website</div><div class="it">api-server</div><div class="it">mobile-app</div><div class="it">notes</div>
+  </div>
+  <div class="main"><h2 id="t-hello"></h2></div>
+</div>
+<button class="avatar" aria-haspopup="menu" aria-expanded="false" aria-label="Open profile menu"><img alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Ccircle cx='18' cy='18' r='18' fill='%23c2410c'/%3E%3Ctext x='18' y='23' font-family='Segoe UI,sans-serif' font-size='13' fill='white' text-anchor='middle'%3EAN%3C/text%3E%3C/svg%3E"></button>
+<script>
+  var lang = new URLSearchParams(location.search).get('lang') === 'vi' ? 'vi' : 'en';
+  document.documentElement.lang = lang === 'vi' ? 'vi-VN' : 'en-US';
+  var T = {
+    en: { newChat: 'New chat', projects: 'Projects', hello: 'What should we build?', usage: 'Usage remaining', mini: 'Show Mini', settings: 'Settings', logout: 'Log out' },
+    vi: { newChat: 'Đoạn chat mới', projects: 'Dự án', hello: 'Bạn muốn chúng ta xây dựng gì?', usage: 'Mức sử dụng còn lại', mini: 'Hiển thị Mini', settings: 'Cài đặt', logout: 'Đăng xuất' }
+  }[lang];
+  document.getElementById('t-new').textContent = T.newChat;
+  document.getElementById('t-projects').textContent = T.projects;
+  document.getElementById('t-hello').textContent = T.hello;
+  // The page talks to its helper through this binding; here nothing answers.
+  window.cmpSwitcherBridge = function () { };
+</script>
+<script src="../../scripts/switcher-inject.js"></script>
+<script>
+  var now = Math.floor(Date.now() / 1000);
+  window.__cmpSwitcher.receive({ kind: 'state', state: {
+    version: '0.4.0', active: 'work', signedIn: true, pending: null, suggestion: 'personal', hotkey: 'Ctrl+Alt+A', lang: 'auto',
+    profiles: [
+      { name: 'work', account: 'al***@example.com', plan: 'plus', depleted: false, needsLogin: false, active: true,
+        usage: [{ label: '5h', used: 28, resetAt: now + 7200 }, { label: 'week', used: 12, resetAt: now + 400000 }] },
+      { name: 'personal', account: 'mi***@example.com', plan: 'pro', depleted: false, needsLogin: false, active: false,
+        usage: [{ label: '5h', used: 0, resetAt: now + 18000 }, { label: 'week', used: 59, resetAt: now + 250000 }] },
+      { name: 'side-project', account: 'jo***@example.com', plan: 'plus', depleted: false, needsLogin: false, active: false,
+        usage: [{ label: '5h', used: 93, resetAt: now + 2400 }, { label: 'week', used: 74, resetAt: now + 90000 }] },
+      { name: 'free', account: 'sa***@example.com', plan: 'free', depleted: false, needsLogin: false, active: false,
+        usage: [{ label: 'month', used: 0, resetAt: now + 2500000 }] }
+    ] } });
+  // Codex's avatar menu (a Radix portal appended to <body>), like 26.9xx builds it.
+  setTimeout(function () {
+    var m = document.createElement('div');
+    m.setAttribute('role', 'menu');
+    function item(cls, html) { var d = document.createElement('div'); d.setAttribute('role', 'menuitem'); if (cls) { d.className = cls; } d.innerHTML = html; return d; }
+    m.appendChild(item('id', '<span class="ava"><img alt="" src="' + document.querySelector('.avatar img').src + '"></span><span>Alex Nguyen<small>Plus</small></span>'));
+    var sep = document.createElement('div'); sep.className = 'menu-separator'; sep.appendChild(document.createElement('span')); m.appendChild(sep);
+    m.appendChild(item('', '<span class="ico" data-i="◔"></span>' + T.usage + '<span class="k">›</span>'));
+    m.appendChild(item('', '<span class="ico" data-i="◎"></span>' + T.mini + '<span class="k">Alt+Win+P</span>'));
+    m.appendChild(item('', '<span class="ico" data-i="⚙"></span>' + T.settings + '<span class="k">Ctrl+,</span>'));
+    m.appendChild(item('', '<span class="ico" data-i="↪"></span>' + T.logout));
+    document.body.appendChild(m);
+    // Like Codex: Escape closes the menu (the switcher sends one before opening its own dialog).
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && m.isConnected) { m.remove(); } }, true);
+  }, 400);
+</script>
+</body>
+</html>

@@ -11,6 +11,10 @@
   <a href="docs/troubleshooting.md">Khắc phục sự cố</a>
 </p>
 
+<p align="center">
+  <img src="docs/images/accounts-menu-vi.png" alt="Mục Tài khoản trong menu avatar của Codex: các tài khoản đã lưu kèm thanh mức sử dụng, Thêm tài khoản" width="366">
+</p>
+
 > Công cụ không chính thức, không liên quan OpenAI. Dành cho người có nhiều tài khoản ChatGPT **hợp lệ** của chính mình.
 > Không dùng để chia sẻ tài khoản hay lách giới hạn sử dụng.
 
@@ -29,6 +33,9 @@ Bấm avatar ở góc dưới bên trái Codex. Ngay dưới tên bạn có mụ
 | Thẻ hết lượt | Khi Codex báo hết giới hạn sử dụng, gợi ý chuyển sang tài khoản kế tiếp |
 
 Menu theo ngôn ngữ của Codex (Việt/Anh) và theo giao diện sáng/tối.
+
+<sub>Ảnh minh hoạ dùng tài khoản giả, được dựng từ chính <code>switcher-inject.js</code> bằng
+<code>node tools/screenshots/capture.mjs</code>.</sub>
 
 ## Cài đặt
 

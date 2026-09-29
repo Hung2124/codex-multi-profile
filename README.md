@@ -19,6 +19,10 @@
   <a href="SUPPORT.md">Support</a>
 </p>
 
+<p align="center">
+  <img src="docs/images/accounts-menu.png" alt="Accounts section in the Codex avatar menu: saved accounts with usage bars, Add account" width="366">
+</p>
+
 > Unofficial helper, not affiliated with OpenAI. For people with more than one **authorized** ChatGPT account.
 > Not for account sharing or getting around usage limits.
 
@@ -37,6 +41,13 @@ Click your avatar at the bottom-left of Codex. Under your name there is an **Acc
 | Usage-limit card | When Codex says you hit your usage limit, it offers to switch to the next saved account |
 
 The menu follows Codex's language (Vietnamese or English) and its light / dark theme.
+
+<p align="center">
+  <img src="docs/images/add-account.png" alt="Add account dialog" width="560">
+</p>
+
+<sub>Screenshots use made-up accounts; they are rendered from the real <code>switcher-inject.js</code> with
+<code>node tools/screenshots/capture.mjs</code>.</sub>
 
 ## Install
 
