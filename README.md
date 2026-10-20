@@ -2,6 +2,8 @@
 
 <p align="center">
   <a href="https://github.com/Hung2124/codex-multi-profile/actions/workflows/ci.yml"><img src="https://github.com/Hung2124/codex-multi-profile/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://www.npmjs.com/package/codex-multi-profile"><img src="https://img.shields.io/npm/v/codex-multi-profile?color=cb3837&label=npm" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/codex-multi-profile"><img src="https://img.shields.io/npm/dm/codex-multi-profile?color=blue&label=downloads" alt="npm downloads"></a>
   <a href="https://github.com/Hung2124/codex-multi-profile/releases"><img src="https://img.shields.io/github/v/release/Hung2124/codex-multi-profile?label=release" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="MIT"></a>
   <img src="https://img.shields.io/badge/platform-Windows-0078D4.svg" alt="Windows">
@@ -57,6 +59,14 @@ Needs Windows 10/11, [Codex](https://chatgpt.com/codex) from the Microsoft Store
 irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.ps1 | iex
 ```
 
+Or via **npm / npx** (Node.js 18+):
+
+```powershell
+npx codex-multi-profile install
+# Or install the global CLI wrapper:
+npm install -g codex-multi-profile
+```
+
 This saves the account Codex is signed in to now as `main`, puts a **Codex** shortcut on the Desktop and in the
 Start menu, and starts a tiny watcher at sign-in (~25 MB, no window). Open Codex any way you like: from the
 original taskbar / Start icon Codex restarts once in its first seconds to get the menu; from the **Codex**
@@ -80,6 +90,12 @@ $env:CODEX_MP_REMOVE_LEGACY = '1'; irm https://raw.githubusercontent.com/Hung212
 ## Command line (agents, scripts)
 
 ```powershell
+# Using the npm CLI wrapper:
+codex-multi-profile list --json
+codex-multi-profile status
+codex-multi-profile switch work
+
+# Or directly via PowerShell:
 $cli = "$env:LOCALAPPDATA\CodexMultiProfile\CodexAccounts.ps1"
 powershell -NoProfile -ExecutionPolicy Bypass -File $cli list      # or: status | save -Name x | switch -Name x | rename -Name x -NewName y | remove -Name x | lang -Name vi
 ```

@@ -1,0 +1,40 @@
+{
+  "name": "codex-multi-profile",
+  "version": "1.0.4",
+  "description": "Switch ChatGPT accounts from the Codex avatar menu in the Microsoft Store Codex app on Windows, with CLI and npm wrapper.",
+  "main": "index.js",
+  "bin": {
+    "codex-multi-profile": "cli.js"
+  },
+  "files": [
+    "index.js",
+    "cli.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "powershell -NoProfile -ExecutionPolicy Bypass -File ./tests/Run-All.ps1"
+  },
+  "keywords": [
+    "codex",
+    "multi-profile",
+    "authswap",
+    "chatgpt",
+    "windows",
+    "cli",
+    "workspace"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hung2124/codex-multi-profile.git"
+  },
+  "homepage": "https://github.com/Hung2124/codex-multi-profile#readme",
+  "bugs": {
+    "url": "https://github.com/Hung2124/codex-multi-profile/issues"
+  },
+  "author": "Hung Nguyen (https://github.com/Hung2124)",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

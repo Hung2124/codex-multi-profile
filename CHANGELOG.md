@@ -2,6 +2,26 @@
 
 All notable changes to this project are documented here.
 
+## 1.0.4 — 2026-10-20
+
+### Added
+- Official npm CLI wrapper (`codex-multi-profile` on npm) supporting `npx codex-multi-profile install`, `list [--json]`, `status`, `save`, `switch`, `rename`, `remove`, and `lang`
+- Automated GitHub Actions release verification and npm package smoke tests in CI
+
+### Changed
+- Unified repository `VERSION` and `package.json` to `1.0.4` with zero-dependency Node.js >=18 launcher delegating to `%LOCALAPPDATA%\CodexMultiProfile\CodexAccounts.ps1`
+
+## 1.0.3 — 2026-10-19
+
+### Added
+- Published `codex-multi-profile` CLI distribution to the public npm registry (`https://www.npmjs.com/package/codex-multi-profile`)
+- Normalized `bin` entry in `package.json` for cross-shell compatibility on Windows (`pwsh`, Windows PowerShell 5.1, Git Bash)
+
+## 1.0.0 — 2026-10-05
+
+### Added
+- Promoted the Microsoft Store Codex avatar-menu switcher architecture (0.4.0) to stable 1.0.0 release after production validation across multi-workspace Plus, Pro, and Team accounts
+
 ## 0.4.0 — 2026-09-28
 
 Rebuilt around the Microsoft Store Codex. Codex 26.9xx refuses to run outside its package ("The process has no
