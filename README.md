@@ -3,7 +3,7 @@
 <p align="center">
   <a href="https://github.com/Hung2124/codex-multi-profile/actions/workflows/ci.yml"><img src="https://github.com/Hung2124/codex-multi-profile/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://www.npmjs.com/package/codex-multi-profile"><img src="https://img.shields.io/npm/v/codex-multi-profile?color=cb3837&label=npm" alt="npm version"></a>
-  <a href="https://www.npmjs.com/package/codex-multi-profile"><img src="https://img.shields.io/npm/dm/codex-multi-profile?color=blue&label=downloads" alt="npm downloads"></a>
+  <a href="https://github.com/Hung2124/codex-multi-profile/stargazers"><img src="https://img.shields.io/github/stars/Hung2124/codex-multi-profile?color=blue&label=stars" alt="GitHub stars"></a>
   <a href="https://github.com/Hung2124/codex-multi-profile/releases"><img src="https://img.shields.io/github/v/release/Hung2124/codex-multi-profile?label=release" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="MIT"></a>
   <img src="https://img.shields.io/badge/platform-Windows-0078D4.svg" alt="Windows">
