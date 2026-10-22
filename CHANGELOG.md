@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here.
 
+## 2.0.0 — 2026-10-23
+
+### Added
+- **Cross-Platform Claude Code & Codex Profile Store (`WorkspaceProfileStore`)**: Programmatic Node.js SDK (`src/profile-manager.js`) and TypeScript definitions (`index.d.ts`) to save, list, and atomically activate isolated `~/.claude/settings.json`, `~/.codex`, and workspace `.mcp.json` profiles across macOS, Linux, and Windows
+- **MCP Server Security & Isolation Auditor (`npx codex-multi-profile mcp-audit`)**: Static analyzer (`src/mcp-auditor.js`) for `.mcp.json` and `claude_desktop_config.json` that detects hardcoded API tokens (`sk-ant-*`, `ghp_*`), non-loopback HTTP/SSE endpoints, and unsafe shell wrapper invocations before switching workspaces
+- **`CLAUDE.md` <-> `AGENTS.md` Instruction Bridge (`npx codex-multi-profile sync-docs`)**: Deterministic Markdown parser and synchronizer (`src/instruction-bridge.js`) keeping repository guidelines aligned across Claude Code and OpenAI Codex workflows
+- Added `docs/claude-code-mcp.md` and `tests/sdk.test.js` covering MCP auditing, instruction synchronization, and profile isolation
+
 ## 1.0.4 — 2026-10-20
 
 ### Added
