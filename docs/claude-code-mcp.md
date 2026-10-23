@@ -52,3 +52,14 @@ Maintainers who use both **Claude Code** and **OpenAI Codex** can keep their rep
 ```bash
 npx codex-multi-profile sync-docs .
 ```
+
+## 4. Generating Hardened `.mcp.json` Manifests
+
+Use `composeMcpConfig` to scaffold a clean `.mcp.json` manifest that enforces `${VAR}` secret interpolation:
+
+```javascript
+const { composeMcpConfig, auditMcpConfig } = require("codex-multi-profile");
+
+const manifest = composeMcpConfig(["github", "filesystem", "postgres"]);
+console.assert(auditMcpConfig(manifest).valid === true);
+```
