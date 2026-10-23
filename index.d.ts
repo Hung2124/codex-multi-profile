@@ -78,3 +78,8 @@ export declare function renderAgentMarkdown(
 export declare function syncWorkspaceInstructions(workspaceDir: string, options?: SyncInstructionOptions): SyncInstructionResult;
 export declare function normalizeProfileSlug(name: string): string;
 export declare function maskEmailAddress(email: string): string;
+
+export declare const MCP_PRESETS: Record<string, Record<string, unknown>>;
+export declare function getMcpPreset(name: string): Record<string, unknown> | null;
+export declare function listMcpPresets(): string[];
+export declare function composeMcpConfig(presetNames?: string[]): { mcpServers: Record<string, unknown> };
