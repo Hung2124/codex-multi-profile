@@ -1,6 +1,6 @@
 {
   "name": "codex-multi-profile",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Multi-workspace profile router, MCP server isolation auditor, and CLAUDE.md <-> AGENTS.md instruction bridge for Claude Code and OpenAI Codex.",
   "main": "index.js",
   "types": "index.d.ts",
