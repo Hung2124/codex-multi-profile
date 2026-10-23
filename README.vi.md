@@ -1,36 +1,57 @@
 # Codex Multi-Profile
 
 <p align="center">
-  <strong>Đổi tài khoản ChatGPT ngay trong menu avatar của Codex (bản Microsoft Store) trên Windows.</strong><br>
-  Một app, một không gian làm việc: lịch sử chat, dự án, skill và cài đặt dùng chung.
+  <strong>Bộ định tuyến hồ sơ đa không gian làm việc (Multi-Workspace Profile Router), kiểm toán bảo mật MCP Server (<code>.mcp.json</code>), và cầu nối đồng bộ <code>CLAUDE.md</code> &harr; <code>AGENTS.md</code> cho Claude Code và OpenAI Codex.</strong><br>
+  Cô lập môi trường Enterprise SSO, Open-Source Maintainer và Personal trên cùng một máy.
 </p>
 
 <p align="center">
   <a href="README.md">English</a> &middot;
+  <a href="docs/claude-code-mcp.md">Claude Code &amp; MCP Guide</a> &middot;
   <a href="docs/architecture.md">Cách hoạt động</a> &middot;
   <a href="docs/troubleshooting.md">Khắc phục sự cố</a>
 </p>
 
 <p align="center">
-  <img src="docs/images/accounts-menu-vi.png" alt="Mục Tài khoản trong menu avatar của Codex: các tài khoản đã lưu kèm thanh mức sử dụng, Thêm tài khoản" width="366">
+  <img src="docs/images/accounts-menu-vi.png" alt="Mục Tài khoản không gian làm việc trong menu avatar kèm thanh mức sử dụng" width="366">
 </p>
 
-> Công cụ không chính thức, không liên quan OpenAI. Dành cho người có nhiều tài khoản ChatGPT **hợp lệ** của chính mình.
-> Không dùng để chia sẻ tài khoản hay lách giới hạn sử dụng.
+> Công cụ mã nguồn mở dành cho lập trình viên, open-source maintainer và kỹ sư tư vấn làm việc trên nhiều không gian làm việc (Enterprise, Client, Personal) **hợp lệ** trong **Claude Code** và **OpenAI Codex**.
 
-## Có gì
+## Tính năng cốt lõi (v2.0)
+
+| Phân hệ | Chức năng |
+|:---|:---|
+| **Claude Code & Codex Profile Store** (`WorkspaceProfileStore`) | Cô lập hồ sơ `~/.claude/settings.json`, `~/.codex`, và `.mcp.json` (`enterprise`, `oss-maintainer`, `research`) bằng cơ chế hoán đổi file nguyên tử (atomic swap) |
+| **Kiểm toán bảo mật MCP** (`mcp-audit`) | Phân tích tĩnh `.mcp.json` và `claude_desktop_config.json`, phát hiện sớm khóa API lộ thiên (`sk-ant-*`, `ghp_*`), kết nối HTTP/SSE không mã hóa và shell wrapper |
+| **Đồng bộ chỉ dẫn** (`sync-docs`) | Đồng bộ hai chiều giữa `CLAUDE.md` (Claude Code) và `AGENTS.md` (OpenAI Codex) trong các dự án đa công cụ |
+| **Chuyển đổi Workspace trên Codex Windows** | Chuyển nhanh giữa các workspace Enterprise, Team và Personal trong 2-3 giây ngay từ menu avatar của ứng dụng Codex |
+
+## CLI Đa nền tảng & Node.js SDK (macOS, Linux, Windows)
+
+```bash
+# Kiểm toán bảo mật file cấu hình MCP (.mcp.json)
+npx codex-multi-profile mcp-audit .mcp.json
+
+# Đồng bộ chỉ dẫn CLAUDE.md <-> AGENTS.md
+npx codex-multi-profile sync-docs .
+
+# Liệt kê các hồ sơ Claude Code (~/.claude) đã cô lập
+npx codex-multi-profile profiles claude
+```
+
+## Tích hợp Menu trên Windows (Ứng dụng Codex Microsoft Store)
 
 Bấm avatar ở góc dưới bên trái Codex. Ngay dưới tên bạn có mục **Tài khoản**:
 
 | Trong menu | Tác dụng |
 |:---|:---|
-| Bấm một tài khoản | Chuyển sang tài khoản đó trong 2-3 giây, cửa sổ Codex giữ nguyên (nếu đang ở màn hình đăng nhập thì Codex khởi động lại, ~10 giây) |
-| **Thêm tài khoản** | Codex khởi động lại ở màn hình đăng nhập; đăng nhập tài khoản kia là nó được lưu với tên bạn đặt |
-| Bút chì / thùng rác (rê chuột vào dòng) | Đổi tên / xoá tài khoản đã lưu (không xoá được tài khoản đang dùng) |
-| Phím `1`-`9` khi menu đang mở | Chọn tài khoản theo số |
-| `Ctrl+Alt+A` | Mở menu từ bất kỳ đâu trong Codex |
-| Thanh mức sử dụng | Dưới mỗi tài khoản: phần còn lại của các giới hạn (5h và Tuần với gói trả phí, Tháng với gói free), xanh / vàng / đỏ; rê chuột để xem giờ đặt lại. Cập nhật khi mở menu (tối đa 1 lần/phút) |
-| Thẻ hết lượt | Khi Codex báo hết giới hạn sử dụng, gợi ý chuyển sang tài khoản kế tiếp |
+| Bấm một hồ sơ workspace | Chuyển sang workspace đó trong 2-3 giây, cửa sổ giữ nguyên (nếu đang ở màn hình đăng nhập thì khởi động lại, ~10 giây) |
+| **Thêm tài khoản** | Khởi động lại ở màn hình đăng nhập; đăng nhập workspace hợp lệ khác để lưu dưới tên hồ sơ mới |
+| Bút chì / thùng rác (rê chuột vào dòng) | Đổi tên / xoá hồ sơ đã lưu (không xoá được hồ sơ đang hoạt động) |
+| Phím `1`-`9` khi menu đang mở | Chọn hồ sơ workspace theo số |
+| `Ctrl+Alt+A` | Mở menu chuyển đổi từ bất kỳ đâu |
+| Thanh mức sử dụng | Hiển thị hạn mức phiên làm việc còn lại (cửa sổ 5h và Tuần) của từng workspace; rê chuột để xem thời điểm đặt lại |
 
 Menu theo ngôn ngữ của Codex (Việt/Anh) và theo giao diện sáng/tối.
 

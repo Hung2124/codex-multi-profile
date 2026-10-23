@@ -1,5 +1,18 @@
 # How it works
 
+## 1. Cross-Platform Node.js SDK & CLI (`src/`)
+
+```
+codex-multi-profile (Node.js 18+ CLI & SDK)
+  ├─ src/mcp-auditor.js        Static security analyzer for .mcp.json & claude_desktop_config.json
+  │                            (flags plaintext tokens sk-ant-*/ghp_*, non-loopback HTTP/SSE, shell wrappers)
+  ├─ src/mcp-presets.js        Hardened MCP server templates enforcing ${ENV_VAR} interpolation
+  ├─ src/instruction-bridge.js Deterministic parser & two-way sync between CLAUDE.md and AGENTS.md
+  └─ src/profile-manager.js    WorkspaceProfileStore: atomic profile snapshots for ~/.claude & ~/.codex
+```
+
+## 2. Windows Store Codex Helper (`scripts/`)
+
 ```
 Codex shortcut
   └─ conhost --headless powershell Start-CodexAccounts.ps1        (hidden, one per Windows session)
