@@ -6,6 +6,7 @@ const os = require("os");
 const fs = require("fs");
 
 const { auditMcpConfig, auditMcpFile } = require("./src/mcp-auditor");
+const { MCP_PRESETS, getMcpPreset, listMcpPresets, composeMcpConfig } = require("./src/mcp-presets");
 const { parseAgentMarkdown, renderAgentMarkdown, syncWorkspaceInstructions } = require("./src/instruction-bridge");
 const { normalizeProfileSlug, maskEmailAddress, WorkspaceProfileStore } = require("./src/profile-manager");
 
@@ -52,5 +53,9 @@ module.exports = {
   syncWorkspaceInstructions,
   normalizeProfileSlug,
   maskEmailAddress,
-  WorkspaceProfileStore
+  WorkspaceProfileStore,
+  MCP_PRESETS,
+  getMcpPreset,
+  listMcpPresets,
+  composeMcpConfig
 };
