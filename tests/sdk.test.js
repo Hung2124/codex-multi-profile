@@ -11,7 +11,9 @@ const {
   syncWorkspaceInstructions,
   normalizeProfileSlug,
   maskEmailAddress,
-  WorkspaceProfileStore
+  WorkspaceProfileStore,
+  listMcpPresets,
+  composeMcpConfig
 } = require("../index");
 
 // 1. Slug normalization & email masking
@@ -130,3 +132,11 @@ try {
 }
 
 console.log("OK: SDK tests passed (MCP auditor, CLAUDE.md <-> AGENTS.md bridge, WorkspaceProfileStore).");
+
+// 5. MCP Presets & Composition Audit
+const presets = listMcpPresets();
+assert.ok(presets.includes("github") && presets.includes("postgres") && presets.includes("slack"));
+const composed = composeMcpConfig(["github", "filesystem", "slack"]);
+const composedAudit = auditMcpConfig(composed);
+assert.strictEqual(composedAudit.valid, true);
+assert.strictEqual(composedAudit.serverCount, 3);
