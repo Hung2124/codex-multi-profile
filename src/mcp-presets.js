@@ -23,6 +23,21 @@ const MCP_PRESETS = {
   memory: {
     command: "npx",
     args: ["-y", "@modelcontextprotocol/server-memory"]
+  },
+  slack: {
+    command: "npx",
+    args: ["-y", "@modelcontextprotocol/server-slack"],
+    env: {
+      SLACK_BOT_TOKEN: "${SLACK_BOT_TOKEN}",
+      SLACK_TEAM_ID: "${SLACK_TEAM_ID}"
+    }
+  },
+  sentry: {
+    command: "npx",
+    args: ["-y", "@modelcontextprotocol/server-sentry"],
+    env: {
+      SENTRY_AUTH_TOKEN: "${SENTRY_AUTH_TOKEN}"
+    }
   }
 };
 
