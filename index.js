@@ -5,9 +5,16 @@ const path = require("path");
 const os = require("os");
 const fs = require("fs");
 
+const { auditMcpConfig, auditMcpFile } = require("./src/mcp-auditor");
+const { parseAgentMarkdown, renderAgentMarkdown, syncWorkspaceInstructions } = require("./src/instruction-bridge");
+const { normalizeProfileSlug, maskEmailAddress, WorkspaceProfileStore } = require("./src/profile-manager");
+
 function getInstallRoot() {
-  const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local");
-  return path.join(localAppData, "CodexMultiProfile");
+  if (process.platform === "win32") {
+    const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local");
+    return path.join(localAppData, "CodexMultiProfile");
+  }
+  return path.join(process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config"), "codex-multi-profile");
 }
 
 function getAccountsScriptPath() {
@@ -16,7 +23,7 @@ function getAccountsScriptPath() {
 
 function runCodexAccounts(args = ["list"]) {
   if (process.platform !== "win32") {
-    throw new Error("codex-multi-profile requires Windows 10/11 with the Microsoft Store Codex app.");
+    throw new Error("Native Windows Store Codex app integration requires Windows 10/11. Use `profiles`, `mcp-audit`, or `sync-docs` on macOS/Linux.");
   }
   const scriptPath = getAccountsScriptPath();
   if (!fs.existsSync(scriptPath)) {
@@ -37,5 +44,13 @@ function runCodexAccounts(args = ["list"]) {
 module.exports = {
   getInstallRoot,
   getAccountsScriptPath,
-  runCodexAccounts
+  runCodexAccounts,
+  auditMcpConfig,
+  auditMcpFile,
+  parseAgentMarkdown,
+  renderAgentMarkdown,
+  syncWorkspaceInstructions,
+  normalizeProfileSlug,
+  maskEmailAddress,
+  WorkspaceProfileStore
 };
