@@ -1,28 +1,35 @@
 {
   "name": "codex-multi-profile",
-  "version": "1.0.4",
-  "description": "Switch ChatGPT accounts from the Codex avatar menu in the Microsoft Store Codex app on Windows, with CLI and npm wrapper.",
+  "version": "2.0.0",
+  "description": "Multi-workspace profile router, MCP server isolation auditor, and CLAUDE.md <-> AGENTS.md instruction bridge for Claude Code and OpenAI Codex.",
   "main": "index.js",
+  "types": "index.d.ts",
   "bin": {
     "codex-multi-profile": "cli.js"
   },
   "files": [
     "index.js",
+    "index.d.ts",
     "cli.js",
+    "src/",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "test": "powershell -NoProfile -ExecutionPolicy Bypass -File ./tests/Run-All.ps1"
+    "test": "node ./tests/sdk.test.js && powershell -NoProfile -ExecutionPolicy Bypass -File ./tests/Run-All.ps1",
+    "test:sdk": "node ./tests/sdk.test.js"
   },
   "keywords": [
+    "claude-code",
+    "mcp",
+    "model-context-protocol",
     "codex",
     "multi-profile",
-    "authswap",
-    "chatgpt",
-    "windows",
+    "workspace-isolation",
+    "agents-md",
+    "claude-md",
     "cli",
-    "workspace"
+    "developer-tools"
   ],
   "repository": {
     "type": "git",
@@ -33,6 +40,10 @@
     "url": "https://github.com/Hung2124/codex-multi-profile/issues"
   },
   "author": "Hung Nguyen (https://github.com/Hung2124)",
+  "contributors": [
+    "Hung Nguyen <thank0617@gmail.com> (https://github.com/Hung2124)",
+    "Simon Skinner <26002659+nicnqaccoin@users.noreply.github.com> (https://github.com/nicnqaccoin)"
+  ],
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"

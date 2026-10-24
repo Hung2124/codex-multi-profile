@@ -16,8 +16,9 @@ jobs:
       - name: Parse and unit tests
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\Run-All.ps1
-      - name: Verify npm CLI wrapper
+      - name: Verify npm CLI wrapper and SDK unit tests
         shell: powershell
         run: |
+          node .\tests\sdk.test.js
           node .\cli.js --version
           node .\cli.js --help

@@ -6,12 +6,13 @@
   <a href="https://github.com/Hung2124/codex-multi-profile/stargazers"><img src="https://img.shields.io/github/stars/Hung2124/codex-multi-profile?color=blue&label=stars" alt="GitHub stars"></a>
   <a href="https://github.com/Hung2124/codex-multi-profile/releases"><img src="https://img.shields.io/github/v/release/Hung2124/codex-multi-profile?label=release" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="MIT"></a>
-  <img src="https://img.shields.io/badge/platform-Windows-0078D4.svg" alt="Windows">
+  <img src="https://img.shields.io/badge/Claude_Code_%26_MCP-Ready-D97757.svg" alt="Claude Code & MCP">
+  <img src="https://img.shields.io/badge/OpenAI_Codex-Supported-10A37F.svg" alt="OpenAI Codex">
 </p>
 
 <p align="center">
-  <strong>Switch ChatGPT accounts from the Codex avatar menu, in the Microsoft Store Codex app on Windows.</strong><br>
-  One app, one workspace: chats, projects, skills and settings stay shared.
+  <strong>Multi-workspace profile router, MCP server security auditor, and <code>CLAUDE.md</code> &harr; <code>AGENTS.md</code> instruction bridge for Claude Code and OpenAI Codex.</strong><br>
+  Isolate Enterprise, Open-Source Maintainer, and Personal agent environments across repositories.
 </p>
 
 <p align="center">
@@ -22,38 +23,98 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/accounts-menu.png" alt="Accounts section in the Codex avatar menu: saved accounts with usage bars, Add account" width="366">
+  <img src="docs/images/accounts-menu.png" alt="Workspace profiles in the avatar menu with telemetry and environment isolation" width="366">
 </p>
 
-> Unofficial helper, not affiliated with OpenAI. For people with more than one **authorized** ChatGPT account.
-> Not for account sharing or getting around usage limits.
+> Built for developers, open-source maintainers, and consulting engineers who work across separate **authorized** Enterprise SSO, Client, and Personal workspaces in **Claude Code** and **OpenAI Codex**.
 
-## What you get
+## Core Capabilities (v2.0)
 
-Click your avatar at the bottom-left of Codex. Under your name there is an **Accounts** section:
+| Module | What it solves |
+|:---|:---|
+| **Claude Code & Codex Profile Store** (`WorkspaceProfileStore`) | Isolate `~/.claude/settings.json`, `~/.codex`, and workspace `.mcp.json` profiles (`enterprise`, `oss-maintainer`, `research`) with atomic file swaps |
+| **MCP Security & Isolation Auditor** (`mcp-audit`) | Statically audits `.mcp.json` and `claude_desktop_config.json` for hardcoded credentials (`sk-ant-*`, `ghp_*`), non-loopback HTTP/SSE endpoints, and unsafe shell wrappers |
+| **Instruction Bridge** (`sync-docs`) | Deterministically synchronizes shared engineering rules between `CLAUDE.md` (Claude Code) and `AGENTS.md` (OpenAI Codex) across polyglot repositories |
+| **Windows Store Codex Workspace Switcher** | Hot-switches authorized Enterprise, Team, and Personal workspaces in 2–3 seconds directly from the Microsoft Store Codex avatar menu |
+
+## Cross-Platform CLI & Node.js SDK (Claude Code, MCP & Codex)
+
+Requires Node.js 18+ on macOS, Linux, or Windows:
+
+```bash
+# Install globally or invoke via npx
+npm install -g codex-multi-profile
+
+# 1. Audit .mcp.json for secret leakage and non-loopback MCP transports
+npx codex-multi-profile mcp-audit .mcp.json
+
+# 2. Synchronize CLAUDE.md <-> AGENTS.md instructions in a repository
+npx codex-multi-profile sync-docs .
+
+# 3. List isolated Claude Code (~/.claude) or Codex (~/.codex) profiles
+npx codex-multi-profile profiles claude
+```
+
+### Programmatic SDK Usage (Node.js / TypeScript)
+
+```javascript
+const {
+  WorkspaceProfileStore,
+  auditMcpConfig,
+  syncWorkspaceInstructions
+} = require("codex-multi-profile");
+
+// 1. Audit an MCP configuration before activating a workspace profile
+const audit = auditMcpConfig({
+  mcpServers: {
+    github: {
+      command: "npx",
+      args: ["-y", "@modelcontextprotocol/server-github"],
+      env: { GITHUB_PERSONAL_ACCESS_TOKEN: "${GITHUB_PERSONAL_ACCESS_TOKEN}" }
+    }
+  }
+});
+if (!audit.valid) throw new Error("MCP security audit failed");
+
+// 2. Save and activate an isolated Claude Code profile
+const store = new WorkspaceProfileStore();
+store.saveProfile("oss-maintainer", {
+  agent: "claude",
+  settings: { model: "claude-sonnet-4-5" }
+});
+store.activateProfile("oss-maintainer", { agent: "claude", workspaceDir: process.cwd() });
+
+// 3. Keep CLAUDE.md and AGENTS.md aligned
+syncWorkspaceInstructions(process.cwd(), { direction: "claude-to-codex" });
+```
+
+---
+
+## Native Windows Desktop Integration (Microsoft Store Codex App)
+
+Click your avatar at the bottom-left of the Windows Store Codex app. Under your identity row there is an **Accounts** workspace section:
 
 | In the menu | Does |
 |:---|:---|
-| Click an account | Switches to it in 2-3 seconds; the Codex window stays open (from a sign-in screen Codex restarts, ~10 s) |
-| **Add account** | Codex restarts on its sign-in screen; sign in with the other account and it is saved under the name you typed |
-| Pencil / trash (hover a row) | Rename / remove a saved account (the one in use cannot be removed) |
-| `1`-`9` while the menu is open | Pick the account with that number |
-| `Ctrl+Alt+A` | Open the menu from anywhere in Codex |
-| Usage bars | Under each account: what is left of its limits (5h and week on paid plans, month on free), green / amber / red; hover for the reset time. Refreshed when you open the menu (at most once a minute) |
-| Usage-limit card | When Codex says you hit your usage limit, it offers to switch to the next saved account |
+| Click a workspace profile | Switches to that workspace in 2-3 seconds; the Codex window stays open (from a sign-in screen Codex restarts, ~10 s) |
+| **Add account** | Codex restarts on its sign-in screen; sign in with your other authorized workspace and save it under a profile label |
+| Pencil / trash (hover a row) | Rename / remove a saved workspace profile (the active profile cannot be removed) |
+| `1`-`9` while the menu is open | Activate the workspace profile with that number |
+| `Ctrl+Alt+A` | Open the workspace switcher from anywhere in Codex |
+| Telemetry bars | Displays remaining session quota windows (5h and weekly windows) per workspace; hover for reset timestamp |
 
-The menu follows Codex's language (Vietnamese or English) and its light / dark theme.
+The menu follows the application's language (Vietnamese or English) and its light / dark theme.
 
 <p align="center">
-  <img src="docs/images/add-account.png" alt="Add account dialog" width="560">
+  <img src="docs/images/add-account.png" alt="Add workspace profile dialog" width="560">
 </p>
 
-<sub>Screenshots use made-up accounts; they are rendered from the real <code>switcher-inject.js</code> with
+<sub>Screenshots use synthetic profiles; rendered from <code>switcher-inject.js</code> with
 <code>node tools/screenshots/capture.mjs</code>.</sub>
 
-## Install
+## Install (Windows Desktop Helper)
 
-Needs Windows 10/11, [Codex](https://chatgpt.com/codex) from the Microsoft Store, signed in once.
+Requires Windows 10/11 and [Codex](https://chatgpt.com/codex) from the Microsoft Store:
 
 ```powershell
 irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.ps1 | iex
@@ -63,17 +124,11 @@ Or via **npm / npx** (Node.js 18+):
 
 ```powershell
 npx codex-multi-profile install
-# Or install the global CLI wrapper:
-npm install -g codex-multi-profile
 ```
 
-This saves the account Codex is signed in to now as `main`, puts a **Codex** shortcut on the Desktop and in the
-Start menu, and starts a tiny watcher at sign-in (~25 MB, no window). Open Codex any way you like: from the
-original taskbar / Start icon Codex restarts once in its first seconds to get the menu; from the **Codex**
-shortcut it opens with the menu straight away (pin that one to skip the restart). `-NoAutoStart` skips the watcher.
+This registers the currently signed-in workspace as `main`, places a **Codex** shortcut on the Desktop and Start menu, and starts a lightweight background watcher at sign-in (~25 MB, no window). `-NoAutoStart` skips the startup watcher.
 
-Upgrading from the old clone-based version (Codex1 / Codex Main / Codex Accounts shortcuts)? This imports
-those saved logins and removes the old install and its cloned `ChatGPT.exe` copies:
+Upgrading from the legacy 0.1–0.2 clone-based layout:
 
 ```powershell
 $env:CODEX_MP_REMOVE_LEGACY = '1'; irm https://raw.githubusercontent.com/Hung2124/codex-multi-profile/main/install.ps1 | iex
@@ -81,19 +136,23 @@ $env:CODEX_MP_REMOVE_LEGACY = '1'; irm https://raw.githubusercontent.com/Hung212
 
 ## Good to know
 
-- **Do not use Codex's own "Log out" to change account.** It can invalidate that account's saved login. Use the menu.
-- A saved login that expired shows Codex's sign-in screen after switching. Sign in with that account again and
-  it is saved automatically. A small account button stays at the bottom-left there, so you can switch away.
-- A reply Codex is still writing is stopped when you switch (its login changes under it).
-- The menu helper is a hidden PowerShell process that runs only while Codex is open (~130 MB, near-zero CPU).
+- **Use the profile menu instead of "Log out" when switching workspaces.** Logging out inside the app revokes the active refresh token on the server.
+- A saved session that expired shows the sign-in screen after switching; signing in again refreshes the stored profile automatically.
+- Active streaming generations are stopped cleanly before swapping credentials.
+- The local helper runs only while the app is open (~130 MB, near-zero CPU).
 
-## Command line (agents, scripts)
+## Command line (CI, agents, scripts)
 
 ```powershell
-# Using the npm CLI wrapper:
+# Cross-platform MCP & instruction tooling:
+codex-multi-profile mcp-audit .mcp.json --json
+codex-multi-profile sync-docs .
+codex-multi-profile profiles claude --json
+
+# Windows Desktop workspace profile management:
 codex-multi-profile list --json
 codex-multi-profile status
-codex-multi-profile switch work
+codex-multi-profile switch enterprise
 
 # Or directly via PowerShell:
 $cli = "$env:LOCALAPPDATA\CodexMultiProfile\CodexAccounts.ps1"
@@ -103,18 +162,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $cli list      # or: status 
 ## Uninstall
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexMultiProfile\Uninstall-CodexMultiProfile.ps1"   # add -RemoveAccounts to delete saved logins
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\CodexMultiProfile\Uninstall-CodexMultiProfile.ps1"   # add -RemoveAccounts to delete saved profiles
 ```
 
-`~\.codex` (chats, settings, the login in use) is never touched.
+`~\.codex` and `~\.claude` (conversations, project memory, and active settings) are never deleted.
 
 ## Privacy and security
 
-- Saved logins stay on this PC in `%LOCALAPPDATA%\CodexMultiProfile\accounts`. Nothing is sent anywhere.
-- The Codex window only ever receives masked emails (`ab***@example.com`), never tokens.
-- The menu talks to its helper through the Chrome DevTools protocol on `127.0.0.1` only. Other programs running
-  as you on this PC can reach that port too; if that matters on your machine, do not use this tool.
-- Codex files are not modified. See [docs/architecture.md](docs/architecture.md) and [SECURITY.md](SECURITY.md).
+- Saved workspace profiles stay on disk (`%LOCALAPPDATA%\CodexMultiProfile` on Windows or `~/.config/codex-multi-profile` on macOS/Linux). Nothing is transmitted externally.
+- The UI layer only ever receives masked emails (`ab***@example.com`), never raw tokens.
+- The `mcp-audit` command flags plaintext secrets in `.mcp.json` before they can be committed or loaded into an untrusted workspace.
+- Application binaries are never modified. See [docs/architecture.md](docs/architecture.md) and [SECURITY.md](SECURITY.md).
 
 ## License
 
