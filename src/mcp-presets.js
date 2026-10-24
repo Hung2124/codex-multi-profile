@@ -55,3 +55,23 @@ module.exports = {
   getMcpPreset,
   listMcpPresets
 };
+
+/**
+ * Builds a complete `.mcp.json` configuration object from a list of preset names.
+ *
+ * @param {string[]} presetNames
+ * @returns {{ mcpServers: Record<string, object> }}
+ */
+function composeMcpConfig(presetNames = []) {
+  const mcpServers = {};
+  for (const name of presetNames) {
+    const preset = getMcpPreset(name);
+    if (!preset) {
+      throw new Error(`Unknown MCP preset: "${name}"`);
+    }
+    mcpServers[String(name).toLowerCase().trim()] = preset;
+  }
+  return { mcpServers };
+}
+
+module.exports.composeMcpConfig = composeMcpConfig;
