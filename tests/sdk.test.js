@@ -20,7 +20,7 @@ const {
 assert.strictEqual(normalizeProfileSlug("Enterprise SSO #1"), "enterprise-sso-1");
 assert.strictEqual(normalizeProfileSlug("Công việc Đại học"), "cong-viec-dai-hoc");
 assert.throws(() => normalizeProfileSlug("!!!"), /Invalid profile name/);
-assert.strictEqual(maskEmailAddress("maintainer@schemalabs.co.uk"), "ma***@schemalabs.co.uk");
+assert.strictEqual(maskEmailAddress("maintainer@open-tooling.dev"), "ma***@open-tooling.dev");
 
 // 2. MCP Security & Workspace Isolation Auditor
 const cleanMcp = {
